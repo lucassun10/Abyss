@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Abyss</title>
+<meta name="description" content="A press-your-luck finance quiz. Rare answers score big. Dive deeper for bigger multipliers, or surface and bank your haul.">
+<meta property="og:title" content="Abyss">
+<meta property="og:description" content="A press-your-luck finance quiz. How deep can you go?">
+<meta name="theme-color" content="#2F8FA3">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦐</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --on-sea: #F0F8F9;
+  --on-sea-dim: rgba(240, 248, 249, 0.74);
+  --panel: rgba(244, 250, 251, 0.94);
+  --panel-line: #C9E0E5;
+  --ink: #0E2A3A;
+  --ink-dim: #4A6674;
+  --krill: #E8604E;
+  --krill-soft: #FCE3DE;
+  --gold: #8A5F00;
+  --good: #1E7A55;
+  --bad: #B33A2B;
+  --btn: #0E2A3A;
+  --btn-ink: #F4FAFB;
+  --field: #FFFFFF;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --panel: rgba(4, 10, 24, 0.66);
+    --panel-line: rgba(180, 220, 230, 0.18);
+    --ink: #EAF4F6;
+    --ink-dim: #9DB7C0;
+    --krill: #FF8C7A;
+    --krill-soft: rgba(255, 140, 122, 0.16);
+    --gold: #F5C451;
+    --good: #6FD6A6;
+    --bad: #FF8C7A;
+    --btn: #EAF4F6;
+    --btn-ink: #071022;
+    --field: rgba(255, 255, 255, 0.06);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --panel: rgba(4, 10, 24, 0.66);
+  --panel-line: rgba(180, 220, 230, 0.18);
+  --ink: #EAF4F6;
+  --ink-dim: #9DB7C0;
+  --krill: #FF8C7A;
+  --krill-soft: rgba(255, 140, 122, 0.16);
+  --gold: #F5C451;
+  --good: #6FD6A6;
+  --bad: #FF8C7A;
+  --btn: #EAF4F6;
+  --btn-ink: #071022;
+  --field: rgba(255, 255, 255, 0.06);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  margin: 0; min-height: 100%;
+  font-family: var(--font);
+  background-color: #2F8FA3;
+  color: var(--on-sea);
+  transition: background-color 1.4s ease;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+#ocean { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+#vignette {
+  position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(120, 0, 10, 0.75) 100%);
+  transition: opacity .3s;
+}
+#flash { position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0; }
+#flash.go { animation: flash .6s ease-out; }
+#fx { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+
+.wrap {
+  position: relative; z-index: 1;
+  max-width: 880px; margin: 0 auto;
+  padding: 28px 20px 48px;
+  display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 32px;
+}
+
+/* Depth rail */
+.rail { position: relative; padding-top: 8px; }
+.rail-line { position: absolute; left: 12px; top: 16px; bottom: 16px; width: 2px; background: rgba(240, 248, 249, 0.28); }
+.stop { position: relative; display: flex; gap: 14px; align-items: flex-start; height: 96px; }
+.stop:last-child { height: auto; }
+.tick {
+  flex: none; width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid rgba(240, 248, 249, 0.4);
+  background: rgba(0, 0, 0, 0.15);
+  transition: border-color .4s, background-color .4s, box-shadow .4s, transform .4s;
+  position: relative; z-index: 1;
+}
+.stop.passed .tick { border-color: var(--on-sea); background: rgba(240, 248, 249, 0.35); }
+.stop.here .tick {
+  border-color: #FF8C7A; background: #FF8C7A; transform: scale(1.12);
+  box-shadow: 0 0 0 6px rgba(255, 140, 122, 0.22), 0 0 26px rgba(255, 140, 122, 0.8);
+  animation: beacon 1.6s ease-in-out infinite;
+}
+.stop-text { font-size: 13px; line-height: 1.3; color: var(--on-sea-dim); padding-top: 3px; }
+.stop-text b { display: block; font-weight: 600; color: var(--on-sea); font-size: 14px; }
+
+/* Readout */
+.readout { margin-bottom: 22px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+h1 { font-size: 15px; font-weight: 600; margin: 0; color: var(--on-sea-dim); letter-spacing: 0.01em; }
+.mute {
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  padding: 6px 12px; border-radius: 99px;
+  border: 1px solid rgba(240, 248, 249, 0.35); background: rgba(0, 0, 0, 0.12); color: var(--on-sea);
+}
+.depth-num {
+  font-size: clamp(64px, 14vw, 128px); font-weight: 800; line-height: 0.88; letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums; font-variation-settings: "opsz" 96; margin: 0;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.18);
+}
+.depth-num small { font-size: 0.32em; letter-spacing: -0.01em; font-weight: 600; margin-left: 6px; }
+.zone-line { font-size: 18px; margin-top: 10px; color: var(--on-sea-dim); }
+.zone-line strong { color: var(--on-sea); font-weight: 600; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 18px; font-size: 15px; color: var(--on-sea-dim); }
+.stats strong { color: var(--on-sea); font-weight: 600; font-variant-numeric: tabular-nums; display: inline-block; }
+.stats strong.bump { animation: bump .45s ease-out; }
+.stats [hidden] { display: none; }
+
+/* Panel */
+.panel {
+  background: var(--panel); color: var(--ink);
+  border: 1px solid var(--panel-line); border-radius: 18px;
+  padding: 26px 26px 24px;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 20px 60px rgba(0, 10, 30, 0.25);
+}
+.panel.enter > * { animation: enter .45s cubic-bezier(.2, .8, .2, 1) both; }
+.panel.enter > *:nth-child(2) { animation-delay: .05s; }
+.panel.enter > *:nth-child(3) { animation-delay: .1s; }
+.panel.enter > *:nth-child(4) { animation-delay: .15s; }
+.panel.enter > *:nth-child(n+5) { animation-delay: .2s; }
+.panel.shake { animation: shake .45s cubic-bezier(.36, .07, .19, .97); }
+.prompt { font-size: clamp(24px, 4.2vw, 32px); font-weight: 600; line-height: 1.15; margin: 0 0 6px; letter-spacing: -0.015em; }
+.sub { color: var(--ink-dim); margin: 0 0 18px; font-size: 15px; line-height: 1.5; max-width: 60ch; }
+
+.air { height: 10px; border-radius: 99px; background: var(--krill-soft); overflow: hidden; margin: 0 0 18px; }
+.air-fill { height: 100%; width: 100%; background: var(--krill); border-radius: 99px; transform-origin: left; }
+.air.low .air-fill { animation: pulse .5s ease-in-out infinite; background: var(--bad); }
+.air-label { font-size: 13px; color: var(--ink-dim); margin: -12px 0 16px; font-variant-numeric: tabular-nums; }
+
+.row { display: flex; gap: 10px; }
+input[type="text"] {
+  flex: 1; min-width: 0; font: inherit; font-size: 18px; padding: 13px 15px;
+  border-radius: 12px; border: 1.5px solid var(--panel-line); background: var(--field); color: var(--ink);
+}
+input[type="text"]:focus { outline: none; border-color: var(--krill); box-shadow: 0 0 0 3px var(--krill-soft); }
+button {
+  font: inherit; font-size: 16px; font-weight: 600; padding: 13px 18px; border-radius: 12px; cursor: pointer;
+  border: 1.5px solid var(--btn); background: var(--btn); color: var(--btn-ink);
+  transition: transform .12s ease;
+}
+button:active { transform: scale(0.96); }
+button.ghost { background: transparent; color: var(--ink); border-color: var(--panel-line); }
+button.dive { background: #FF8C7A; border-color: #FF8C7A; color: #1A0703; position: relative; overflow: hidden; }
+button.dive::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: sheen 2.6s ease-in-out infinite;
+}
+button:focus-visible, input:focus-visible, .mute:focus-visible { outline: 3px solid #FF8C7A; outline-offset: 2px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+
+.msg { min-height: 22px; margin-top: 12px; font-size: 15px; line-height: 1.45; }
+.msg.bad { color: var(--bad); }
+.msg.note { color: var(--ink-dim); }
+
+.catch { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 4px 0 8px; }
+.catch-pts { font-size: 56px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; color: var(--good); font-variant-numeric: tabular-nums; }
+.catch-pts.lost { color: var(--bad); }
+.catch-name { font-size: 22px; font-weight: 600; }
+.tier { display: inline-block; font-size: 14px; font-weight: 600; padding: 4px 10px; border-radius: 99px; background: var(--krill-soft); color: var(--ink); }
+.tier.k { background: linear-gradient(90deg, #FF8C7A, #F5C451, #FF8C7A); background-size: 200% 100%; color: #1A0703; animation: shimmer 1.6s linear infinite; }
+.tier.stamp { animation: stamp .5s cubic-bezier(.2, .8, .2, 1) both; }
+.tier.k.stamp { animation: stamp .5s cubic-bezier(.2, .8, .2, 1) both, shimmer 1.6s linear .5s infinite; }
+
+.ledger { margin: 18px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--panel-line); }
+.ledger li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--panel-line); font-size: 15px; }
+.ledger li > span:last-child { font-variant-numeric: tabular-nums; color: var(--ink-dim); }
+.rules { margin: 0; padding-left: 20px; line-height: 1.6; font-size: 16px; max-width: 60ch; }
+.rules li { margin-bottom: 6px; }
+.scale { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 4px; }
+.gold { color: var(--gold); }
+.examples { font-size: 15px; color: var(--ink-dim); line-height: 1.5; margin-top: 14px; }
+.examples strong { color: var(--ink); font-weight: 600; }
+
+/* Effects */
+.float {
+  position: absolute; transform: translate(-50%, 0); white-space: nowrap;
+  font-family: var(--font); font-weight: 800; font-size: 40px; letter-spacing: -0.03em;
+  color: #6FD6A6; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
+  animation: floatUp 1.2s cubic-bezier(.2, .8, .2, 1) forwards;
+}
+.float.k { color: #F5C451; font-size: 56px; }
+.float.fall { color: #FF8C7A; animation: fallDown 1.1s ease-in forwards; }
+.banner {
+  position: absolute; left: 50%; top: 42%; white-space: nowrap;
+  font-family: var(--font); font-weight: 800; letter-spacing: -0.04em;
+  font-size: clamp(40px, 9vw, 96px); color: #F5C451;
+  text-shadow: 0 0 30px rgba(245, 196, 81, 0.7), 0 4px 0 #8A3A2E;
+  animation: banner 1.8s cubic-bezier(.2, .8, .2, 1) forwards;
+}
+.coin { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #F5C451; box-shadow: 0 0 12px rgba(245, 196, 81, 0.9); }
+
+@keyframes enter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes shake { 10%, 90% { transform: translateX(-2px); } 20%, 80% { transform: translateX(5px); } 30%, 50%, 70% { transform: translateX(-9px); } 40%, 60% { transform: translateX(9px); } }
+@keyframes pulse { 50% { opacity: 0.45; } }
+@keyframes beacon { 50% { box-shadow: 0 0 0 11px rgba(255, 140, 122, 0.08), 0 0 34px rgba(255, 140, 122, 0.9); } }
+@keyframes bump { 40% { transform: scale(1.35); color: #F5C451; } }
+@keyframes sheen { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@keyframes stamp { 0% { transform: scale(2.4); opacity: 0; } 60% { transform: scale(0.9); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 10px) scale(0.6); } 15% { opacity: 1; transform: translate(-50%, -10px) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -110px) scale(1); } }
+@keyframes fallDown { 0% { opacity: 1; transform: translate(-50%, 0) rotate(0); } 100% { opacity: 0; transform: translate(-50%, 140px) rotate(16deg); } }
+@keyframes banner { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(-6deg); } 18% { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(-3deg); } 75% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-3deg); } 100% { opacity: 0; transform: translate(-50%, -70%) scale(1.04) rotate(-3deg); } }
+@keyframes flash { 0% { opacity: 0.55; } 100% { opacity: 0; } }
+
+
+.stats.home .ingame { display: none; }
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0 6px; }
+.mode {
+  text-align: left; display: flex; flex-direction: column; gap: 6px; padding: 18px;
+  background: var(--field); color: var(--ink); border: 1.5px solid var(--panel-line); border-radius: 16px;
+}
+.mode b { font-size: 20px; letter-spacing: -0.01em; }
+.mode span { font-weight: 400; font-size: 14px; line-height: 1.45; color: var(--ink-dim); }
+.mode .meta { font-weight: 600; color: var(--ink); }
+.mode.daily { border-color: #FF8C7A; box-shadow: 0 0 0 3px var(--krill-soft); }
+.mode:disabled { cursor: default; opacity: 0.85; box-shadow: none; }
+.mode:disabled:active { transform: none; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.nav button { font-size: 15px; padding: 10px 14px; }
+.back { margin-bottom: 14px; font-size: 14px; padding: 8px 12px; }
+.section-h { font-size: 17px; font-weight: 600; margin: 22px 0 4px; }
+.section-note { font-size: 14px; color: var(--ink-dim); margin: 0 0 8px; }
+.shop { list-style: none; margin: 0; padding: 0; }
+.shop li { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--panel-line); }
+.shop li:last-child { border-bottom: 0; }
+.shop .info b { display: block; font-size: 16px; }
+.shop .info span { display: block; font-size: 14px; color: var(--ink-dim); line-height: 1.4; margin-top: 2px; }
+.shop button { flex: none; font-size: 14px; padding: 9px 14px; white-space: nowrap; }
+.shop button:disabled { opacity: 0.45; cursor: default; }
+.shop .info span.swatch, .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.bar { height: 8px; border-radius: 99px; background: var(--krill-soft); overflow: hidden; margin-top: 6px; }
+.bar > i { display: block; height: 100%; background: var(--krill); border-radius: 99px; }
+.logcat { border-bottom: 1px solid var(--panel-line); }
+.logcat summary { list-style: none; cursor: pointer; padding: 12px 0; display: block; }
+.logcat summary::-webkit-details-marker { display: none; }
+.logcat .top { display: flex; justify-content: space-between; gap: 10px; font-size: 15px; }
+.logcat .top span:last-child { color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 14px; }
+.chip { font-size: 13px; padding: 4px 9px; border-radius: 99px; background: var(--krill-soft); }
+.chip.k { background: #F5C451; color: #1A0703; }
+.chip.r { background: #FF8C7A; color: #1A0703; }
+.chip.hidden { background: transparent; border: 1px dashed var(--panel-line); color: var(--ink-dim); }
+.grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 6px 0; }
+.grid-stats div { padding: 12px; border-radius: 12px; background: var(--field); border: 1px solid var(--panel-line); }
+.grid-stats b { display: block; font-size: 26px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.grid-stats span { font-size: 13px; color: var(--ink-dim); }
+.chart { width: 100%; height: 120px; display: block; margin-top: 8px; }
+.ach { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; }
+.ach li { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--panel-line); font-size: 14px; line-height: 1.35; }
+.ach li b { display: block; font-size: 15px; }
+.ach li span { color: var(--ink-dim); }
+.ach li.locked { opacity: 0.5; }
+.ach li.got { border-color: #F5C451; }
+.compare { margin: 14px 0 0; padding: 14px; border-radius: 12px; background: var(--field); border: 1px solid var(--panel-line); font-size: 15px; line-height: 1.55; }
+.compare strong { font-variant-numeric: tabular-nums; }
+.board { margin: 8px 0 0; padding-left: 22px; font-size: 14px; line-height: 1.7; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.tools button { font-size: 14px; padding: 8px 12px; }
+.tools button.armed { background: #F5C451; border-color: #F5C451; color: #1A0703; }
+.hint { font-size: 15px; margin-top: 10px; color: var(--ink); letter-spacing: 0.08em; font-weight: 600; }
+.namefield { display: flex; gap: 8px; margin-top: 8px; }
+.namefield input { font-size: 16px !important; padding: 10px 12px !important; }
+.namefield button { font-size: 14px; padding: 10px 14px; }
+.toast {
+  position: absolute; left: 50%; top: calc(14px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
+  background: #0B1730; color: #F0F8F9; border: 1px solid #F5C451; border-radius: 14px;
+  padding: 10px 16px; font-family: var(--font); font-size: 15px; white-space: nowrap;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); animation: toast 3.2s cubic-bezier(.2, .8, .2, 1) forwards;
+}
+.toast b { color: #F5C451; }
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, -30px); } 10%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -20px); } }
+@media (max-width: 680px) { .modes { grid-template-columns: 1fr; } .toast { white-space: normal; width: calc(100% - 28px); text-align: center; } }
+
+@media (max-width: 680px) {
+  .wrap { grid-template-columns: 1fr; gap: 18px; padding: 18px 14px 36px; }
+  .rail { display: flex; justify-content: space-between; padding-top: 0; }
+  .rail-line { left: 13px; right: 13px; top: 12px; bottom: auto; width: auto; height: 2px; }
+  .stop { flex-direction: column; align-items: center; height: auto; gap: 6px; width: 20%; }
+  .stop-text { text-align: center; font-size: 11px; padding-top: 0; }
+  .stop-text b { font-size: 12px; }
+  .stop-text .m { display: none; }
+  .panel { padding: 20px 18px; border-radius: 16px; }
+  .row { flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<canvas id="ocean" aria-hidden="true"></canvas>
+<div id="vignette" aria-hidden="true"></div>
+<div id="flash" aria-hidden="true"></div>
+<div id="fx" aria-hidden="true"></div>
+<div class="wrap">
+  <nav class="rail" id="rail" aria-label="Dive depth"></nav>
+  <main>
+    <div class="readout">
+      <div class="topbar"><h1 id="title"></h1><button class="mute" id="mute" type="button"></button></div>
+      <p class="depth-num"><span id="depthNum">0</span><small>m</small></p>
+      <div class="zone-line" id="zoneLine">At the surface</div>
+      <div class="stats" id="stats">
+        <span class="ingame">Dive <strong id="sDive">1</strong> of 3</span>
+        <span class="ingame">Banked <strong id="sBank">0</strong></span>
+        <span class="ingame" id="riskWrap">At risk <strong id="sRisk">0</strong></span>
+        <span class="ingame">Spare tanks <strong id="sSpare">1</strong></span>
+        <span>🦪 <strong id="sPearls">0</strong> pearls</span>
+        <span id="streakWrap">🔥 <strong id="sStreak">0</strong>-day streak</span>
+      </div>
+    </div>
+    <section class="panel" id="panel" aria-live="polite"></section>
+  </main>
+</div>
+<script>
+(function () {
+  "use strict";
+
+  var GAME_NAME = "Abyss";
+  var REDUCE = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  /* Global leaderboard (optional). Fill these in after creating the free Supabase table
+     described in the setup notes. Leave them empty and the game runs fully offline. */
+  var LEADERBOARD = {
+    supabaseUrl: "",
+    supabaseAnonKey: ""
+  };
+
+  var TIERS = {
+    c: { name: "Crowded", pts: 1 },
+    u: { name: "Uncommon", pts: 3 },
+    r: { name: "Rare", pts: 6 },
+    k: { name: "Abyssal", pts: 10 }
+  };
+  var DIVES_PER_RUN = 3;
+  var BASE_AIR = 30;
+  var BASE_BONUS = 25;
+  var SURFACE_SEA = "#2F8FA3";
+  var DAILY_PEARL_MULT = 2;
+
+  var DEPTHS = [
+    { name: "Sunlight", m: 200, mult: 1, sea: "#2B84A0", cats: ["currency", "bank", "investor", "payments"] },
+    { name: "Twilight", m: 1000, mult: 2, sea: "#1F5D85", cats: ["exchange", "crisis", "bond", "index", "centralbank"] },
+    { name: "Midnight", m: 4000, mult: 3, sea: "#163B67", cats: ["hedgefund", "propfirm", "legacy", "pe", "derivative"] },
+    { name: "Abyss", m: 6000, mult: 5, sea: "#0D2145", cats: ["greek", "fallen", "strategy"] },
+    { name: "Hadal", m: 10900, mult: 8, sea: "#060D22", cats: ["exotic", "foreignbond", "candle"] }
+  ];
+
+  var UPGRADES = {
+    tank: { name: "Bigger tank", desc: "+5 seconds of air per question.", costs: [150, 400, 900] },
+    spare: { name: "Extra spare tank", desc: "One more second chance per game.", costs: [300, 1000] },
+    hull: { name: "Pressure hull", desc: "Bigger bonus for reaching the bottom.", costs: [200, 600] }
+  };
+  var HULL_BONUS = [25, 50, 100];
+  var ITEMS = {
+    sonar: { name: "Sonar ping", desc: "Reveals the first letter and length of a rare answer.", cost: 40, max: 5 },
+    charm: { name: "Lucky charm", desc: "Doubles the points of your next answer.", cost: 80, max: 3 }
+  };
+  var SKINS = {
+    coral: { name: "Coral krill", cost: 0, body: "255,140,122" },
+    gold: { name: "Gold krill", cost: 300, body: "245,196,81" },
+    neon: { name: "Neon swarm", cost: 600, body: "90,230,255" },
+    phantom: { name: "Phantom swarm", cost: 1000, body: "205,185,255" },
+    prism: { name: "Prism swarm", cost: 2000, rainbow: true }
+  };
+  var ACHIEVEMENTS = [
+    { id: "first", name: "First splash", desc: "Finish a game.", reward: 20 },
+    { id: "abyssal", name: "Abyssal find", desc: "Score an Abyssal answer.", reward: 30 },
+    { id: "clutch", name: "Last breath", desc: "Answer correctly with under 3 seconds of air.", reward: 40 },
+    { id: "trench", name: "Trench touch", desc: "Bank a dive from the Hadal zone.", reward: 50 },
+    { id: "haul100", name: "Heavy net", desc: "Bank 100 or more from a single dive.", reward: 60 },
+    { id: "sweep", name: "Clean sweep", desc: "Bank all three dives in one game.", reward: 80 },
+    { id: "score250", name: "Deep pockets", desc: "Score 250 or more in one game.", reward: 100 },
+    { id: "found50", name: "Collector", desc: "Find 50 different answers.", reward: 50 },
+    { id: "found150", name: "Curator", desc: "Find 150 different answers.", reward: 150 },
+    { id: "found400", name: "Natural historian", desc: "Find 400 different answers.", reward: 400 },
+    { id: "allcats", name: "Cartographer", desc: "Find an answer in every category.", reward: 150 },
+    { id: "streak3", name: "Regular", desc: "Play the Daily Dive 3 days in a row.", reward: 75 },
+    { id: "streak7", name: "Lifer", desc: "Play the Daily Dive 7 days in a row.", reward: 200 }
+  ];
+
+  var CATS = {
+    currency: {
+      q: "Name a currency in use today",
+      strip: [],
+      c: "Dollar|us dollar|usd;Euro|eur;Pound|pound sterling|sterling|british pound|gbp;Yen|jpy",
+      u: "Yuan|renminbi|rmb|cny;Rupee|inr;Peso;Franc|swiss franc|chf;Ruble|rouble|rub;Won|krw",
+      r: "Real|reais|brl;Rand|zar;Krona;Krone;Lira;Shekel|new shekel|sheqel;Dirham;Riyal;Baht;Dinar;Rial",
+      k: "Ringgit;Rupiah;Dong;Zloty;Forint;Koruna;Naira;Cedi;Shilling;Lev|leva;Leu|lei;Hryvnia|hryvna;Tenge;Kwacha;Birr;Taka;Kyat;Guarani;Sol|nuevo sol;Bolivar;Colon;Quetzal;Lempira;Afghani;Kina;Pula;Lari;Dram;Manat;Som;Somoni;Tugrik|togrog;Kip;Riel;Ngultrum;Ouguiya;Dalasi;Leone;Kwanza;Metical;Lilangeni;Loti;Nakfa;Ariary;Vatu;Tala;Pa’anga|paanga;Rufiyaa;Gourde;Balboa;Cordoba;Denar"
+    },
+    bank: {
+      q: "Name a bank",
+      strip: ["the", "inc", "plc", "group", "corp", "corporation", "co", "company", "financial", "holdings", "ag", "sa"],
+      c: "JPMorgan Chase|jpmorgan|jp morgan|chase|jpm|jpmorgan chase bank;Bank of America|bofa|boa;Wells Fargo;Citigroup|citi|citibank;Goldman Sachs|goldman;Morgan Stanley",
+      u: "U.S. Bank|us bank|us bancorp|u s bank;PNC;Truist;Capital One;HSBC;Barclays;Deutsche Bank|deutsche;UBS",
+      r: "BNP Paribas|bnp;Santander|banco santander;MUFG|mitsubishi ufj;ICBC|industrial and commercial bank of china;BNY|bny mellon|bank of new york mellon|bank of new york;State Street;Mizuho;Royal Bank of Canada|rbc;TD Bank|td|toronto dominion;Lloyds|lloyds bank|lloyds banking;NatWest;ING;Nomura;Charles Schwab|schwab",
+      k: "Société Générale|societe generale|socgen|soc gen;SMBC|sumitomo mitsui;Crédit Agricole|credit agricole;China Construction Bank|ccb;Agricultural Bank of China;Bank of China;Northern Trust;Citizens|citizens bank;Fifth Third;KeyBank|keycorp;Regions;M&T|m and t|m and t bank;Huntington;Scotiabank|bank of nova scotia;BMO|bank of montreal;CIBC;Standard Chartered;Commerzbank;UniCredit;Intesa Sanpaolo|intesa;BBVA;Rabobank;Nordea;DBS;HDFC Bank|hdfc;State Bank of India|sbi;Commonwealth Bank|cba;Westpac;ANZ;NAB|national australia bank;Macquarie;Jefferies;Raymond James;First Citizens"
+    },
+    investor: {
+      q: "Name a famous investor",
+      strip: [],
+      c: "Warren Buffett|buffett|buffet|warren buffet;Charlie Munger|munger",
+      u: "Ray Dalio|dalio;George Soros|soros;Peter Lynch|lynch;Benjamin Graham|ben graham|graham;Carl Icahn|icahn;Bill Ackman|ackman;Cathie Wood|cathy wood;Michael Burry|burry",
+      r: "Jim Simons|simons;Ken Griffin|griffin;Steve Cohen|steven cohen;Stanley Druckenmiller|druckenmiller|stan druckenmiller;John Bogle|jack bogle|bogle;Paul Tudor Jones|ptj;David Tepper|tepper;Seth Klarman|klarman;Howard Marks;John Templeton|templeton;Bill Gross;John Paulson|paulson;Jesse Livermore|livermore;David Einhorn|einhorn;Jim Rogers;Masayoshi Son;Peter Thiel|thiel;Larry Fink|fink;Stephen Schwarzman|steve schwarzman|schwarzman",
+      k: "Philip Fisher|phil fisher;Joel Greenblatt|greenblatt;Julian Robertson;Jeffrey Gundlach|gundlach;Mohnish Pabrai|pabrai;Li Lu;Ed Thorp|edward thorp|thorp;Bill Miller;Terry Smith;Nick Sleep;Walter Schloss|schloss;Thomas Rowe Price|t rowe price;John Neff;Israel Englander|izzy englander;Dan Loeb|daniel loeb|loeb;Paul Singer;Chase Coleman;Bruce Kovner|kovner;Michael Steinhardt|steinhardt;Ken Fisher;Rakesh Jhunjhunwala;Lou Simpson;Guy Spier;Leon Cooperman|cooperman;Mario Gabelli|gabelli;John Arnold;Cliff Asness|asness;Nelson Peltz|peltz;T. Boone Pickens|boone pickens"
+    },
+    exchange: {
+      q: "Name a stock or derivatives exchange",
+      strip: ["the", "stock", "exchange", "exchanges", "securities", "market", "bourse", "of", "group"],
+      c: "NYSE|new york;Nasdaq",
+      u: "London Stock Exchange|london|lse;Tokyo Stock Exchange|tokyo|tse|jpx|japan;Shanghai Stock Exchange|shanghai|sse;Hong Kong Stock Exchange|hong kong|hkex|hkse",
+      r: "Euronext|euronext paris|paris;Shenzhen|szse;Toronto (TSX)|toronto|tsx;Frankfurt|deutsche borse|deutsche boerse|xetra|fse;Bombay (BSE)|bombay|bse;National Stock Exchange of India|nse|national india;ASX|australian|sydney;Singapore (SGX)|singapore|sgx;Cboe|chicago board options;CME|chicago mercantile;ICE|intercontinental",
+      k: "Korea Exchange|korea|krx;Taiwan|twse;SIX Swiss|six|swiss|zurich;Johannesburg|jse;B3|brazil|sao paulo|bovespa;Saudi Exchange|tadawul|saudi;NYSE American|amex|american;IEX|investors;Nasdaq Stockholm|stockholm;Borsa Italiana|milan;BME|madrid|spanish;Moscow|moex;Mexican|bmv|mexico;Tel Aviv|tase;Borsa Istanbul|istanbul;Indonesia|idx|jakarta;Bursa Malaysia|malaysia|kuala lumpur;SET|thailand;Philippine|pse;Nigerian|ngx|lagos;Egyptian|egx|cairo;Vienna|wiener borse;Warsaw|wse;Oslo|oslo bors;Copenhagen;Helsinki;MEMX|members;Dubai|dfm;Abu Dhabi|adx;Qatar;Santiago|chile;Buenos Aires|byma;New Zealand|nzx;Pakistan|psx|karachi"
+    },
+    crisis: {
+      q: "Name a financial crisis, crash or bubble",
+      strip: ["the", "of", "crisis", "financial", "crash", "market", "stock", "bubble", "panic", "collapse", "meltdown"],
+      c: "2008 Financial Crisis|2008|great recession|global financial crisis|gfc|subprime|subprime mortgage|housing|lehman;Great Depression|1929|wall street 1929|black tuesday|black thursday;Dot-com Bubble|dot com|dotcom|tech|2000",
+      u: "Black Monday (1987)|black monday|1987;Tulip Mania|tulip|tulipmania;COVID Crash (2020)|covid|2020|coronavirus;SVB Collapse (2023)|svb|silicon valley bank|2023 banking",
+      r: "South Sea Bubble|south sea;Asian Financial Crisis (1997)|asian|1997;Russian Default (1998)|russian|1998|russian default;LTCM (1998)|long term capital management|ltcm;Savings and Loan Crisis|savings and loan|s and l;European Debt Crisis|european sovereign debt|european debt|eurozone|euro;Greek Debt Crisis|greek|greece|greek debt;Flash Crash (2010)|flash|2010 flash;Panic of 1907|1907;Japanese Asset Bubble|japanese|japan|lost decade|japanese asset;GameStop Squeeze (2021)|gamestop|gme|meme;FTX / Crypto Winter (2022)|ftx|crypto winter|crypto",
+      k: "Mississippi Bubble|mississippi;Panic of 1873|1873;Panic of 1837|1837;Panic of 1792|1792;Panic of 1819|1819;Panic of 1893|1893;Panic of 1857|1857;Tequila Crisis (1994)|tequila|mexican peso|1994;Latin American Debt Crisis|latin american debt|latin american;Black Wednesday (1992)|black wednesday|1992;Argentine Crisis (2001)|argentine|argentina|2001;Icelandic Crisis (2008)|icelandic|iceland;Volmageddon (2018)|volmageddon;Archegos (2021)|archegos;Swiss Franc Shock (2015)|swiss franc|francogeddon;UK Gilt Crisis (2022)|gilt|liz truss|ldi;Herstatt (1974)|herstatt;Kreditanstalt (1931)|kreditanstalt;Taper Tantrum (2013)|taper tantrum;Railway Mania|railway;Overend Gurney (1866)|overend gurney;Barings (1995)|barings|baring"
+    },
+    bond: {
+      q: "Name a type of bond",
+      strip: ["bond", "bonds", "the", "note", "notes", "debt"],
+      c: "Treasury|treasuries|us treasury|government|t;Municipal|muni|munis;Corporate",
+      u: "Junk|high yield;Zero-coupon|zero coupon|zero;Convertible;Savings|us savings|ee",
+      r: "TIPS|inflation protected|inflation linked|linkers;Callable;Green;Floating Rate|frn|floater;I Bond|i|series i;Agency;Mortgage-backed|mbs|mortgage backed;Sovereign;War;Investment Grade|ig",
+      k: "Puttable|putable;Perpetual|consol|consols;Eurobond;Samurai;Yankee;Bulldog;Panda;Catastrophe|cat;Covered;CoCo|contingent convertible|coco;STRIPS;Brady;Sukuk;Step-up|step up;Sinking Fund;Revenue;General Obligation|go;Build America|bab;Gilt|gilts;Bund|bunds;JGB|japanese government;OAT;BTP;Social;Sustainability-linked|sustainability linked;Blue;Exchangeable;Dual Currency;Payment-in-kind|pik|payment in kind;Amortizing;Bearer"
+    },
+    hedgefund: {
+      q: "Name a hedge fund",
+      strip: ["the", "capital", "management", "partners", "group", "investment", "investments", "associates", "lp", "llc", "fund", "funds", "advisors", "global", "and", "co"],
+      c: "Bridgewater;Citadel",
+      u: "Renaissance Technologies|renaissance|rentec|medallion;Millennium;Two Sigma;D. E. Shaw|de shaw|d e shaw|deshaw;Point72|point 72|sac",
+      r: "Elliott|elliot;Man Group|man|man ahl|ahl;AQR;Pershing Square|pershing;Baupost;Third Point;Tiger Global|tiger;Balyasny|bam;Coatue;Appaloosa;Scion;Tudor;Soros Fund Management|soros|soros fund;LTCM|long term|ltcm",
+      k: "Viking Global|viking;Lone Pine;Marshall Wace;Brevan Howard;Winton;Davidson Kempner;Farallon;Sculptor|och ziff;Greenlight;Paulson & Co.|paulson;ExodusPoint|exodus point;Schonfeld;Capula;Element;Duquesne;Maverick;Glenview;ValueAct;Starboard;Trian;Jana;Icahn Enterprises|icahn;Canyon;Hudson Bay;Rokos;Graham;Caxton;Moore;Arrowstreet;BlueCrest;Squarepoint;Qube;Verition;Whale Rock;Light Street;D1"
+    },
+    propfirm: {
+      q: "Name a prop trading or market-making firm",
+      strip: ["the", "trading", "capital", "group", "securities", "markets", "llc", "company", "co", "and", "investments", "partners", "global"],
+      c: "Jane Street;Citadel Securities|citadel",
+      u: "Hudson River Trading|hudson river|hrt;Jump Trading|jump;Optiver;Susquehanna (SIG)|susquehanna|sig|susquehanna international",
+      r: "Virtu;DRW;IMC;Tower Research|tower;Akuna;Flow Traders;XTX",
+      k: "Five Rings;Old Mission;Wolverine;Maven;Da Vinci|davinci;Belvedere;Peak6|peak 6;Chicago Trading Company|ctc|chicago;Headlands;Radix;Quantlab;Vatic;Geneva;Tibra;Eagle Seven;Group One|one;Allston;Teza;XR Trading|xr;Mako"
+    },
+    legacy: {
+      q: "Name a currency that was replaced by the euro",
+      strip: ["the"],
+      c: "Deutsche Mark|deutschmark|deutsche mark|dm|mark|german mark;French Franc|franc;Italian Lira|lira",
+      u: "Spanish Peseta|peseta;Dutch Guilder|guilder|gulden;Greek Drachma|drachma",
+      r: "Portuguese Escudo|escudo;Belgian Franc;Austrian Schilling|schilling;Irish Pound|punt|irish punt",
+      k: "Finnish Markka|markka;Luxembourg Franc;Slovenian Tolar|tolar;Cypriot Pound;Maltese Lira;Slovak Koruna|koruna;Estonian Kroon|kroon;Latvian Lats|lats;Lithuanian Litas|litas;Croatian Kuna|kuna;Monegasque Franc;Sammarinese Lira;Vatican Lira"
+    },
+    greek: {
+      q: "Name an options Greek",
+      strip: ["the"],
+      c: "Delta;Gamma;Theta",
+      u: "Vega|kappa;Rho",
+      r: "Vanna;Volga|vomma|volgamma;Charm|delta decay",
+      k: "Speed;Color|colour|gamma decay;Zomma;Ultima;Veta;Lambda|elasticity|omega;Epsilon|psi;Vera;Dual Delta;Dual Gamma"
+    },
+    fallen: {
+      q: "Name a bank or Wall Street firm that collapsed or was swallowed up",
+      strip: ["the", "brothers", "bros", "and", "co", "company", "inc", "securities", "group"],
+      c: "Lehman Brothers|lehman;Bear Stearns|bear",
+      u: "Merrill Lynch|merrill;Credit Suisse;Washington Mutual|wamu;Wachovia;Countrywide",
+      r: "Salomon Brothers|salomon;Drexel Burnham Lambert|drexel|drexel burnham;Barings|baring;MF Global;Refco;Silicon Valley Bank|svb;First Republic;Signature Bank|signature;Smith Barney;Dean Witter;PaineWebber|paine webber;Continental Illinois;Long-Term Capital|ltcm|long term capital",
+      k: "Kidder Peabody|kidder;Dillon Read;First Boston;Donaldson Lufkin & Jenrette|dlj|donaldson lufkin jenrette;Shearson|shearson lehman;E.F. Hutton|ef hutton|hutton;Hambrecht & Quist;Kuhn Loeb;Montgomery Securities|montgomery;Robertson Stephens;Thomson McKinnon;A.G. Edwards|ag edwards;Alex. Brown|alex brown;Wertheim;Hornblower|hornblower weeks;Bankers Trust;Franklin National;Herstatt;Knight Capital|knight;Overend Gurney;Kreditanstalt;Northern Rock;Jay Cooke|jay cooke;Penn Square;IndyMac"
+    },
+    exotic: {
+      q: "Name an exotic option",
+      strip: ["option", "options", "the", "style"],
+      c: "Barrier|knock out|knock in|knockout|knockin|up out|down in|up in|down out|up and out|down and in|up and in|down and out;Binary|digital|all or nothing|cash or nothing",
+      u: "Asian|average|average rate;Bermudan|bermuda;Lookback|look back",
+      r: "Chooser;Compound;Basket;Quanto;Rainbow;Cliquet|ratchet;Spread;Forward Start|forward starting;Touch|one touch|no touch|double no touch",
+      k: "Shout;Exchange|margrabe;Range Accrual;Parisian;Russian;Himalayan;Everest;Atlas;Passport;Power;Mountain Range;Canary;Corridor;Ladder;Accumulator"
+    },
+    foreignbond: {
+      q: "Name a foreign bond by its market nickname",
+      strip: ["bond", "bonds", "the", "market"],
+      c: "Yankee;Samurai",
+      u: "Bulldog;Panda;Eurobond|euro",
+      r: "Kangaroo|matilda;Maple;Dim Sum|dimsum;Shogun|geisha",
+      k: "Matador;Kimchi;Arirang;Formosa;Rembrandt;Masala;Uridashi;Daimyo;Komodo;Sushi;Alpine"
+    },
+    payments: {
+      q: "Name a payment company or card network",
+      strip: ["the", "inc", "payments", "holdings", "corp", "company", "co"],
+      c: "Visa;Mastercard|master card;American Express|amex;PayPal",
+      u: "Discover;Block (Square)|square|block;Venmo;Zelle;Cash App|cashapp;Apple Pay;Google Pay|gpay",
+      r: "Stripe;UnionPay|china unionpay;Klarna;Affirm;Alipay;WeChat Pay|wechat;Adyen;Afterpay",
+      k: "JCB;Diners Club|diners;RuPay;Fiserv;FIS;Global Payments;Worldpay;Paytm;Mercado Pago;Interac;Pix;UPI;Toast;Checkout.com|checkout com|checkout;Wise|transferwise;Revolut;Marqeta;Payoneer;Western Union;MoneyGram;Remitly;Sezzle;Elavon;Shift4;Nuvei;Rapyd;Paysafe;Skrill;Neteller;Amazon Pay;Samsung Pay"
+    },
+    index: {
+      q: "Name a stock or bond market index",
+      strip: ["the", "index", "indices"],
+      c: "S&P 500|s and p 500|sp500|sp 500|s and p|spx|standard and poors 500;Dow Jones|dow|dow jones industrial average|djia|dow 30|dow jones industrials;Nasdaq Composite|nasdaq|ixic",
+      u: "Nasdaq-100|nasdaq 100|ndx|qqq;Russell 2000|russell|rut;FTSE 100|ftse|footsie;Nikkei 225|nikkei;DAX|dax 40|dax 30",
+      r: "Hang Seng|hsi;CAC 40|cac;Shanghai Composite|sse composite|shanghai;Nifty 50|nifty;Sensex|bse sensex;KOSPI;S&P/TSX Composite|tsx|tsx composite;S&P/ASX 200|asx 200|asx;Euro Stoxx 50|eurostoxx 50|euro stoxx|stoxx 50|sx5e;MSCI World;VIX|cboe volatility|fear;Wilshire 5000|wilshire;Russell 1000;MSCI Emerging Markets|msci em|msci emerging",
+      k: "MSCI EAFE|eafe;S&P MidCap 400|s and p 400|midcap 400|s and p midcap 400;S&P SmallCap 600|s and p 600;IBEX 35|ibex;FTSE MIB;AEX;SMI|swiss market;OMX Stockholm 30|omxs30|omx 30;Ibovespa|bovespa;S&P/BMV IPC|ipc|mexbol;TAIEX;Straits Times|sti;Jakarta Composite|jci;SET Index|set;FTSE Bursa Malaysia KLCI|klci;PSEi;TASI|tadawul all share;MOEX Russia|moex;BIST 100|bist;JSE Top 40|top 40;Merval;NZX 50;Russell 3000;Dow Jones Transportation|dow transports|transports|djta;Dow Jones Utilities|djua|dow utilities;TOPIX;CSI 300|csi;STOXX Europe 600|stoxx 600;FTSE 250;Bloomberg US Aggregate|agg|aggregate|barclays agg|bloomberg agg;PHLX Semiconductor|sox|semiconductor;KBW Bank|bkx;Value Line;S&P 100|oex;Nasdaq Biotech|nbi;Bloomberg Commodity|bcom;S&P GSCI|gsci;MSCI ACWI|acwi"
+    },
+    centralbank: {
+      q: "Name a central bank",
+      strip: ["the", "of"],
+      c: "Federal Reserve|fed|us federal reserve|federal reserve system|frb;European Central Bank|ecb;Bank of England|boe",
+      u: "Bank of Japan|boj;People’s Bank of China|peoples bank china|pboc|pbc",
+      r: "Swiss National Bank|snb;Bank of Canada|boc;Reserve Bank of Australia|rba;Reserve Bank of India|rbi;Bundesbank|deutsche bundesbank;Riksbank|sveriges riksbank",
+      k: "Banque de France;Norges Bank;Reserve Bank of New Zealand|rbnz;Bank of Korea|bok;Central Bank of Brazil|banco central do brasil|bcb|bacen;Banxico|bank mexico|banco de mexico;Bank of Russia|central bank russia|russian central bank|cbr;South African Reserve Bank|sarb;Monetary Authority of Singapore|mas;Hong Kong Monetary Authority|hkma;Central Bank of Turkey|cbrt|turkish central bank|central bank republic turkey;Bank of Israel;Danmarks Nationalbank;Central Bank of Ireland;Bank of Italy|banca d italia|banca ditalia;Bank of Spain|banco de espana;De Nederlandsche Bank|dnb|dutch central bank;Saudi Central Bank|sama;Central Bank of Nigeria|cbn;Bank Indonesia;Bank of Thailand;Bangko Sentral ng Pilipinas|bsp;Bank Negara Malaysia;State Bank of Pakistan;Central Bank of Argentina|bcra;Central Bank of Chile;Central Bank of Egypt;National Bank of Poland|nbp;Czech National Bank|cnb;Magyar Nemzeti Bank|mnb|hungarian national bank;Central Bank of Iceland;Bank of Ghana;Central Bank of Kenya;Bank of Finland;Central Bank of Sri Lanka;Bank of Mauritius"
+    },
+    pe: {
+      q: "Name a private equity firm",
+      strip: ["the", "capital", "partners", "group", "management", "equity", "private", "and", "co", "lp", "llc", "holdings", "investments", "inc", "global", "international"],
+      c: "Blackstone;KKR|kohlberg kravis roberts;Carlyle",
+      u: "Apollo;TPG|texas pacific;Bain Capital|bain",
+      r: "Warburg Pincus|warburg;Silver Lake;Thoma Bravo;Vista Equity Partners|vista;Advent International|advent;CVC;EQT;General Atlantic;Brookfield;Ares;Cerberus;Oaktree",
+      k: "Hellman & Friedman|h and f|hellman and friedman;Leonard Green;Clayton Dubilier & Rice|cd and r|cdr|clayton dubilier and rice;Permira;Cinven;Apax;Blue Owl;Hg|hgcapital;Ardian;BC Partners|bc;Platinum Equity|platinum;Sycamore;Roark;Genstar;Welsh Carson|welsh carson anderson stowe;Insight Partners|insight;3G Capital|3g;Berkshire Partners|berkshire;Thomas H. Lee|thl|thomas h lee;Searchlight;Stone Point;Francisco Partners|francisco;Veritas;Providence Equity|providence;Onex;PAI;Bridgepoint;Triton;Nordic Capital|nordic;Hillhouse;Golden Gate;American Securities;Lone Star;Summit Partners|summit;TA Associates|ta"
+    },
+    derivative: {
+      q: "Name a type of derivative",
+      strip: ["the", "contract", "contracts"],
+      c: "Option|call|put|call option|put option;Future|futures contract;Swap",
+      u: "Forward|forward contract;Credit Default Swap|cds|credit default;Interest Rate Swap|irs|interest rate;Warrant",
+      r: "Swaption;CDO|collateralized debt obligation;Interest Rate Cap|cap;Interest Rate Floor|floor;Interest Rate Collar|collar;Total Return Swap|trs|total return;CFD|contract for difference|contracts for difference;Currency Swap|cross currency swap|fx swap;Variance Swap",
+      k: "FRA|forward rate agreement;Inflation Swap;Basis Swap;Equity Swap;Credit-Linked Note|cln|credit linked note;NDF|non deliverable forward;Weather Derivative|weather;Volatility Swap;Dividend Swap|dividend future;Commodity Swap;Synthetic CDO;CDS Index|cdx|itraxx;Overnight Index Swap|ois;Option on Futures|futures option;Perpetual Future|perpetual swap|perp;Event Contract|prediction market;Correlation Swap;Asset Swap;Credit Spread Option;Longevity Swap"
+    },
+    strategy: {
+      q: "Name an options strategy",
+      strip: ["the", "strategy", "option", "options", "trade", "position"],
+      c: "Covered Call|buy write;Straddle|long straddle;Strangle|long strangle",
+      u: "Iron Condor;Butterfly|butterfly spread|long butterfly;Protective Put|married put;Vertical Spread|vertical|bull call spread|bull call|bull spread|bear spread|bear put spread|bull put spread|bear call spread|credit spread|debit spread;Cash-Secured Put|cash secured put|csp|naked put|short put",
+      r: "Collar|zero cost collar;Calendar Spread|calendar|time spread|horizontal spread;Iron Butterfly|iron fly;Diagonal Spread|diagonal;Ratio Spread|ratio;Synthetic Long|synthetic stock|synthetic;Risk Reversal;The Wheel|wheel;Short Straddle;Short Strangle",
+      k: "Box Spread|box;Condor|long condor;Jade Lizard;Broken Wing Butterfly|broken wing|bwb;Christmas Tree;Seagull;Backspread|ratio backspread;Strap;Strip;Poor Man’s Covered Call|pmcc|poor mans covered call;Conversion;Reversal|reverse conversion;Big Lizard;Double Diagonal;Guts;Fence"
+    },
+    candle: {
+      q: "Name a candlestick pattern",
+      strip: ["the", "pattern", "patterns", "candle", "candlestick", "bullish", "bearish"],
+      c: "Doji;Hammer",
+      u: "Engulfing;Shooting Star;Morning Star;Evening Star",
+      r: "Hanging Man;Harami;Marubozu;Spinning Top;Three White Soldiers;Three Black Crows;Inverted Hammer",
+      k: "Dark Cloud Cover;Piercing Line|piercing;Tweezer Top|tweezer|tweezer bottom|tweezers;Abandoned Baby;Dragonfly Doji|dragonfly;Gravestone Doji|gravestone;Long-Legged Doji|long legged doji;Kicker|kicking;Tasuki Gap|tasuki;Three Inside Up|three inside down|three inside;Three Outside Up|three outside down|three outside;Rising Three Methods|falling three methods|three methods;Belt Hold;On-Neck|on neck;Counterattack;Stick Sandwich;Tri-Star|tristar;Upside Gap Two Crows|two crows;Homing Pigeon;Ladder Bottom;Mat Hold;Harami Cross;Morning Doji Star;Evening Doji Star;Three Stars in the South;Unique Three River;Concealing Baby Swallow;Identical Three Crows;Advance Block;Breakaway;Separating Lines;Thrusting Line|thrusting;In-Neck|in neck;Hikkake"
+    }
+  };
+  /* ---------- Matching ---------- */
+  function norm(s, strip) {
+    var base = String(s)
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/&/g, " and ")
+      .replace(/['\u2019.]/g, "")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+    if (!strip || !strip.length) return base;
+    var out = base.split(" ").filter(function (w) { return strip.indexOf(w) === -1; }).join(" ");
+    return out || base;
+  }
+
+  Object.keys(CATS).forEach(function (key) {
+    var cat = CATS[key];
+    cat.entries = []; cat.map = {};
+    ["c", "u", "r", "k"].forEach(function (tier) {
+      cat[tier].split(";").forEach(function (raw) {
+        var parts = raw.split("|");
+        var entry = { display: parts[0], tier: tier, id: key + ":" + parts[0], aliases: [] };
+        parts.forEach(function (p) {
+          var n = norm(p, cat.strip);
+          if (n && entry.aliases.indexOf(n) === -1) entry.aliases.push(n);
+          if (n && !cat.map[n]) cat.map[n] = entry;
+        });
+        cat.entries.push(entry);
+      });
+    });
+  });
+
+  function lev(a, b) {
+    if (Math.abs(a.length - b.length) > 2) return 9;
+    var prev = [], cur, i, j;
+    for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) {
+      cur = [i];
+      for (j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+
+  function lookup(catKey, input) {
+    var cat = CATS[catKey];
+    var n = norm(input, cat.strip);
+    if (!n) return null;
+    var tries = [n];
+    if (/s$/.test(n) && n.length > 3) tries.push(n.slice(0, -1));
+    if (/es$/.test(n) && n.length > 4) tries.push(n.slice(0, -2));
+    for (var i = 0; i < tries.length; i++) if (cat.map[tries[i]]) return cat.map[tries[i]];
+    var best = null, bestD = 9;
+    cat.entries.forEach(function (e) {
+      e.aliases.forEach(function (a) {
+        if (a.length < 5) return;
+        var allowed = a.length >= 10 ? 2 : 1;
+        var d = lev(n, a);
+        if (d <= allowed && d < bestD) { best = e; bestD = d; }
+      });
+    });
+    if (best) return best;
+    var tail = null, tailLen = 0;
+    tries.forEach(function (t) {
+      cat.entries.forEach(function (e) {
+        e.aliases.forEach(function (a) {
+          if (a.length >= 3 && a.length > tailLen && t.slice(-(a.length + 1)) === " " + a) { tail = e; tailLen = a.length; }
+        });
+      });
+    });
+    return tail;
+  }
+
+  /* ---------- Storage ---------- */
+  function sget(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
+  function sset(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+  /* ---------- Sound ---------- */
+  var AC = null, muted = false;
+  function ac() {
+    if (muted) return null;
+    try {
+      if (!AC) { var C = window.AudioContext || window.webkitAudioContext; if (!C) return null; AC = new C(); }
+      if (AC.state === "suspended") AC.resume();
+      return AC;
+    } catch (e) { return null; }
+  }
+  function tone(f, t0, dur, type, vol, f2) {
+    var a = ac(); if (!a) return;
+    var o = a.createOscillator(), g = a.createGain(), st = a.currentTime + (t0 || 0);
+    o.type = type || "sine";
+    o.frequency.setValueAtTime(f, st);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, st + dur);
+    g.gain.setValueAtTime(0.0001, st);
+    g.gain.exponentialRampToValueAtTime(vol || 0.12, st + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, st + dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(st); o.stop(st + dur + 0.05);
+  }
+  var sfx = {
+    correct: function (t) {
+      var notes = { c: [523], u: [523, 659], r: [523, 659, 784], k: [523, 659, 784, 1047, 1319, 1568] }[t];
+      notes.forEach(function (f, i) { tone(f, i * 0.07, 0.24, "triangle", 0.15); });
+      if (t === "k") tone(2093, notes.length * 0.07, 0.6, "sine", 0.09);
+    },
+    wrong: function () { tone(330, 0, 0.5, "sawtooth", 0.08, 80); },
+    spare: function () { tone(440, 0, 0.12, "square", 0.05); tone(330, 0.14, 0.2, "square", 0.05); },
+    dive: function () { tone(520, 0, 0.8, "sine", 0.12, 60); tone(260, 0.05, 0.8, "sine", 0.06, 40); },
+    coin: function (i) { tone(1400 + i * 45, 0, 0.07, "triangle", 0.05); },
+    bank: function () { [1319, 1568, 2093].forEach(function (f, i) { tone(f, i * 0.06, 0.2, "triangle", 0.1); }); },
+    tick: function () { tone(1150, 0, 0.05, "square", 0.035); },
+    best: function () { [523, 659, 784, 1047, 784, 1047, 1319].forEach(function (f, i) { tone(f, i * 0.09, 0.25, "triangle", 0.12); }); }
+  };
+  function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+
+  /* ---------- Ocean canvas ---------- */
+  var Ocean = (function () {
+    var cv = document.getElementById("ocean"), ctx = cv.getContext("2d");
+    var W = 0, H = 0, t = 0, zone = 0, zoneTarget = 0, boost = 0, pointer = null, lastPointer = 0;
+    var krill = [], bubbles = [], snow = [], glows = [], sparks = [], skin = { body: "255,140,122" };
+    function R() { return Math.random(); }
+    function hsl(h) {
+      var s = 0.85, l = 0.68, c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2, r = 0, g = 0, b = 0;
+      if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; } else if (h < 240) { g = x; b = c; } else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
+      return Math.round((r + m) * 255) + "," + Math.round((g + m) * 255) + "," + Math.round((b + m) * 255);
+    }
+    function resize() {
+      var dpr = Math.min(2, window.devicePixelRatio || 1);
+      W = window.innerWidth; H = window.innerHeight;
+      cv.width = W * dpr; cv.height = H * dpr;
+      cv.style.width = W + "px"; cv.style.height = H + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    function init() {
+      resize();
+      var small = W < 700, i;
+      for (i = 0; i < (small ? 45 : 80); i++) krill.push({ x: R() * W, y: R() * H, vx: 0, vy: 0, p: R() * 6.28, s: 0.7 + R() * 0.7 });
+      for (i = 0; i < 24; i++) bubbles.push({ x: R() * W, y: R() * H, r: 1.5 + R() * 4, sp: 0.3 + R() * 0.8, w: R() * 6.28 });
+      for (i = 0; i < 110; i++) snow.push({ x: R() * W, y: R() * H, r: 0.6 + R() * 1.4, sp: 0.15 + R() * 0.35 });
+      var cols = ["90,220,255", "170,120,255", "120,255,200"];
+      for (i = 0; i < 7; i++) glows.push({ x: R() * W, y: R() * H, r: 30 + R() * 70, p: R() * 6.28, vx: (R() - 0.5) * 0.2, vy: (R() - 0.5) * 0.12, c: cols[i % 3] });
+      window.addEventListener("resize", resize);
+      window.addEventListener("pointermove", function (e) { pointer = { x: e.clientX, y: e.clientY }; lastPointer = Date.now(); }, { passive: true });
+      window.addEventListener("pointerdown", function (e) { pointer = { x: e.clientX, y: e.clientY }; lastPointer = Date.now(); }, { passive: true });
+      document.addEventListener("visibilitychange", function () { if (!document.hidden) requestAnimationFrame(frame); });
+      requestAnimationFrame(frame);
+    }
+    function frame() {
+      if (document.hidden) return;
+      t++;
+      zone += (zoneTarget - zone) * 0.025;
+      boost *= 0.955;
+      if (pointer && Date.now() - lastPointer > 2500) pointer = null;
+      ctx.clearRect(0, 0, W, H);
+      var i, g;
+
+      // light rays near the surface
+      var rayA = Math.max(0, 1 - zone / 2.2) * 0.14;
+      if (rayA > 0.005) {
+        for (i = 0; i < 5; i++) {
+          var x0 = (i / 5) * W * 1.2 - W * 0.1 + Math.sin(t * 0.003 + i) * 40;
+          g = ctx.createLinearGradient(x0, 0, x0 + W * 0.25, H);
+          g.addColorStop(0, "rgba(255,255,235," + rayA + ")"); g.addColorStop(1, "rgba(255,255,235,0)");
+          ctx.fillStyle = g; ctx.beginPath();
+          ctx.moveTo(x0, 0); ctx.lineTo(x0 + 70, 0); ctx.lineTo(x0 + W * 0.25 + 180, H); ctx.lineTo(x0 + W * 0.25, H);
+          ctx.closePath(); ctx.fill();
+        }
+      }
+
+      // bioluminescent glows in the deep
+      var gA = Math.max(0, Math.min(1, zone - 2.4));
+      if (gA > 0.01) {
+        ctx.save(); ctx.globalCompositeOperation = "lighter";
+        glows.forEach(function (o) {
+          o.x += o.vx; o.y += o.vy - boost * 0.6;
+          if (o.y < -o.r * 2) { o.y = H + o.r; o.x = R() * W; }
+          if (o.y > H + o.r * 2) o.y = -o.r;
+          if (o.x < -o.r) o.x = W + o.r; if (o.x > W + o.r) o.x = -o.r;
+          var pulse = 0.5 + 0.5 * Math.sin(t * 0.02 + o.p);
+          var rg = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
+          rg.addColorStop(0, "rgba(" + o.c + "," + (0.24 * gA * pulse + 0.03 * gA) + ")");
+          rg.addColorStop(1, "rgba(" + o.c + ",0)");
+          ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, 6.283); ctx.fill();
+        });
+        ctx.restore();
+      }
+
+      // marine snow
+      var nSnow = Math.floor(snow.length * Math.min(1, zone / 4));
+      ctx.fillStyle = "rgb(220,235,240)";
+      for (i = 0; i < nSnow; i++) {
+        var s = snow[i];
+        s.y += s.sp - boost; s.x += Math.sin((t + i * 30) * 0.01) * 0.15;
+        if (s.y > H + 5) s.y = -5;
+        if (s.y < -5) { s.y = H + 5; s.x = R() * W; }
+        ctx.globalAlpha = 0.25 + 0.3 * (s.r / 2);
+        ctx.fillRect(s.x, s.y, s.r, s.r * (1 + boost * 0.6));
+      }
+      ctx.globalAlpha = 1;
+
+      // bubbles
+      ctx.strokeStyle = "rgba(240,250,255,0.5)"; ctx.lineWidth = 1;
+      bubbles.forEach(function (b) {
+        b.y -= b.sp + boost * 1.4; b.x += Math.sin(t * 0.03 + b.w) * 0.4;
+        if (b.y < -10) { b.y = H + 10; b.x = R() * W; }
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 6.283); ctx.stroke();
+      });
+
+      // krill swarm
+      var tx, ty;
+      if (pointer) { tx = pointer.x; ty = pointer.y; }
+      else { tx = W * (0.5 + 0.34 * Math.sin(t * 0.0021)); ty = H * (0.5 + 0.3 * Math.sin(t * 0.0033 + 1)); }
+      var deep = zone >= 2.5;
+      ctx.save(); if (deep) ctx.globalCompositeOperation = "lighter";
+      krill.forEach(function (k) {
+        var dx = tx - k.x, dy = ty - k.y, d = Math.sqrt(dx * dx + dy * dy) + 1;
+        k.vx += dx / d * 0.035 + Math.cos(t * 0.05 + k.p) * 0.05;
+        k.vy += dy / d * 0.035 + Math.sin(t * 0.043 + k.p) * 0.05;
+        if (d < 70) { k.vx -= dx / d * 0.1; k.vy -= dy / d * 0.1; }
+        k.vx *= 0.97; k.vy *= 0.97;
+        var sp = Math.sqrt(k.vx * k.vx + k.vy * k.vy), mx = 2.3 * k.s + (k.flee || 0);
+        if (sp > mx) { k.vx *= mx / sp; k.vy *= mx / sp; }
+        if (k.flee) k.flee *= 0.95;
+        k.x += k.vx; k.y += k.vy - boost * 0.8;
+        if (k.y < -20) k.y = H + 20; if (k.y > H + 20) k.y = -20;
+        if (k.x < -20) k.x = W + 20; if (k.x > W + 20) k.x = -20;
+        ctx.save(); ctx.translate(k.x, k.y); ctx.rotate(Math.atan2(k.vy, k.vx));
+        var col = skin.rainbow ? hsl((k.p * 57 + t * 0.6) % 360) : skin.body;
+        ctx.fillStyle = "rgba(" + col + "," + (deep ? 0.65 : 0.9) + ")";
+        ctx.beginPath(); ctx.ellipse(0, 0, 4.2 * k.s, 1.6 * k.s, 0, 0, 6.283); ctx.fill();
+        if (deep) { ctx.fillStyle = "rgba(" + col + ",0.13)"; ctx.beginPath(); ctx.arc(0, 0, 7 * k.s, 0, 6.283); ctx.fill(); }
+        ctx.restore();
+      });
+      ctx.restore();
+
+      // sparks
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      for (i = sparks.length - 1; i >= 0; i--) {
+        var p = sparks[i];
+        p.x += p.vx; p.y += p.vy; p.vx *= 0.955; p.vy = p.vy * 0.955 + 0.06; p.life--;
+        if (p.life <= 0) { sparks.splice(i, 1); continue; }
+        ctx.globalAlpha = Math.min(1, p.life / 30);
+        ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+      }
+      ctx.restore();
+
+      requestAnimationFrame(frame);
+    }
+    return {
+      init: function () { if (!REDUCE) init(); },
+      setSkin: function (s) { skin = s; },
+      setZone: function (z) { zoneTarget = z; if (REDUCE) zone = z; },
+      dive: function () { boost = 15; },
+      surface: function () { boost = -10; },
+      burst: function (x, y, n, colors, power) {
+        if (REDUCE) return;
+        for (var i = 0; i < n; i++) {
+          var a = R() * 6.283, v = (1.5 + R() * 5) * (power || 1);
+          sparks.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 1.5, life: 40 + R() * 40, r: 1.5 + R() * 3, c: colors[i % colors.length] });
+        }
+      },
+      scatter: function (x, y) {
+        krill.forEach(function (k) {
+          var dx = k.x - x, dy = k.y - y, d = Math.sqrt(dx * dx + dy * dy) + 1;
+          k.vx += dx / d * 9; k.vy += dy / d * 9; k.flee = 6;
+        });
+      }
+    };
+  })();
+
+  /* ---------- Effects helpers ---------- */
+  var $fx = document.getElementById("fx");
+  var $flash = document.getElementById("flash");
+  var $vignette = document.getElementById("vignette");
+
+  function center(el) {
+    var r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+  function floatText(text, x, y, cls) {
+    if (REDUCE) return;
+    var d = document.createElement("div");
+    d.className = "float " + (cls || "");
+    d.textContent = text;
+    d.style.left = x + "px"; d.style.top = (y - 20) + "px";
+    $fx.appendChild(d);
+    setTimeout(function () { d.remove(); }, 1400);
+  }
+  function banner(text) {
+    if (REDUCE) return;
+    var d = document.createElement("div");
+    d.className = "banner"; d.textContent = text;
+    $fx.appendChild(d);
+    setTimeout(function () { d.remove(); }, 1900);
+  }
+  function flash(color) {
+    if (REDUCE) return;
+    $flash.style.background = color;
+    $flash.classList.remove("go"); void $flash.offsetWidth; $flash.classList.add("go");
+  }
+  function retrigger(el, cls) {
+    if (!el || REDUCE) return;
+    el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+  }
+  function rollNumber(el, to, dur) {
+    var from = el._val || 0;
+    el._val = to;
+    if (el._raf) cancelAnimationFrame(el._raf);
+    if (REDUCE || from === to) { el.textContent = fmt(to); return; }
+    var start = performance.now();
+    (function step(now) {
+      var k = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = fmt(Math.round(from + (to - from) * e));
+      if (k < 1) el._raf = requestAnimationFrame(step);
+    })(start);
+  }
+  function setNumber(el, v) { el._val = v; if (el._raf) cancelAnimationFrame(el._raf); el.textContent = fmt(v); }
+  function coinsTo(fromEl, toEl, n, done) {
+    if (REDUCE || !Element.prototype.animate) { done(); return; }
+    var a = center(fromEl), b = center(toEl), finished = 0;
+    for (var i = 0; i < n; i++) (function (i) {
+      var c = document.createElement("div");
+      c.className = "coin"; c.style.left = a.x + "px"; c.style.top = a.y + "px";
+      $fx.appendChild(c);
+      var mx = (a.x + b.x) / 2 + (Math.random() - 0.5) * 220, my = Math.min(a.y, b.y) - 60 - Math.random() * 120;
+      var anim = c.animate([
+        { transform: "translate(0,0) scale(0.4)", opacity: 0 },
+        { transform: "translate(" + (mx - a.x) + "px," + (my - a.y) + "px) scale(1.2)", opacity: 1, offset: 0.45 },
+        { transform: "translate(" + (b.x - a.x) + "px," + (b.y - a.y) + "px) scale(0.6)", opacity: 1 }
+      ], { duration: 700 + Math.random() * 200, delay: i * 45, easing: "cubic-bezier(.5,0,.3,1)", fill: "forwards" });
+      anim.onfinish = function () {
+        c.remove(); sfx.coin(i); finished++;
+        if (finished === n) done();
+      };
+    })(i);
+  }
+
+  /* ---------- Save data ---------- */
+  var SAVE_KEY = "abyss-save-v1";
+  var save = (function () {
+    var d = sget(SAVE_KEY, null) || {};
+    function def(k, v) { if (d[k] === undefined) d[k] = v; }
+    def("pearls", 0); def("lifetime", 0); def("best", 0); def("games", []);
+    def("found", {}); def("ach", {}); def("up", { tank: 0, spare: 0, hull: 0 });
+    def("items", { sonar: 1, charm: 0 }); def("skin", "coral"); def("skins", { coral: true });
+    def("daily", {}); def("streak", { last: "", count: 0, best: 0 }); def("muted", false);
+    def("seen", {}); def("name", "");
+    return d;
+  })();
+  function persist() { sset(SAVE_KEY, save); }
+  muted = save.muted;
+
+  function todayUTC() { return new Date().toISOString().slice(0, 10); }
+  function dayBefore(day) { var d = new Date(day + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); }
+  function untilNextDaily() {
+    var now = new Date(), next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+    var mins = Math.max(1, Math.ceil((next - now.getTime()) / 60000));
+    return Math.floor(mins / 60) + "h " + (mins % 60) + "m";
+  }
+  function streakNow() {
+    var s = save.streak, t = todayUTC();
+    return (s.last === t || s.last === dayBefore(t)) ? s.count : 0;
+  }
+
+  function hashStr(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  /* ---------- Leaderboard (optional, Supabase REST) ---------- */
+  var Board = {
+    on: function () { return !!(LEADERBOARD.supabaseUrl && LEADERBOARD.supabaseAnonKey); },
+    headers: function () {
+      return { apikey: LEADERBOARD.supabaseAnonKey, Authorization: "Bearer " + LEADERBOARD.supabaseAnonKey, "Content-Type": "application/json" };
+    },
+    submit: function (row) {
+      if (!Board.on()) return Promise.resolve(false);
+      var h = Board.headers(); h.Prefer = "return=minimal";
+      return fetch(LEADERBOARD.supabaseUrl.replace(/\/$/, "") + "/rest/v1/scores", { method: "POST", headers: h, body: JSON.stringify(row) })
+        .then(function (r) { return r.ok; }).catch(function () { return false; });
+    },
+    day: function (day, mode) {
+      if (!Board.on()) return Promise.resolve(null);
+      var url = LEADERBOARD.supabaseUrl.replace(/\/$/, "") + "/rest/v1/scores?select=score,name&day=eq." + day + "&mode=eq." + mode + "&order=score.desc&limit=5000";
+      return fetch(url, { headers: Board.headers() }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+    }
+  };
+  function diverName() {
+    if (!save.name) { save.name = "Diver " + (1000 + Math.floor(Math.random() * 9000)); persist(); }
+    return save.name;
+  }
+
+  /* ---------- Derived gear ---------- */
+  function gear(mode) {
+    if (mode === "daily") return { air: BASE_AIR, spares: 1, bonus: BASE_BONUS };
+    return { air: BASE_AIR + 5 * save.up.tank, spares: 1 + save.up.spare, bonus: HULL_BONUS[save.up.hull] };
+  }
+  function catLabel(key) { var q = CATS[key].q.replace(/^Name (a|an) /, ""); return q.charAt(0).toUpperCase() + q.slice(1); }
+  var TOTAL_ANSWERS = Object.keys(CATS).reduce(function (n, k) { return n + CATS[k].entries.length; }, 0);
+  function foundCount() { return Object.keys(save.found).length; }
+
+  /* ---------- State ---------- */
+  var S = {
+    screen: "home", mode: "free", rng: Math.random, g: gear("free"),
+    dive: 0, banked: 0, spares: 1, used: {}, usedCats: {}, depth: -1, haul: 0, cat: null,
+    air: BASE_AIR, timer: null, last: null, log: [], pending: [],
+    msg: "", msgKind: "", lastTick: 99, charm: false, hint: "", sonarUsed: false,
+    newFinds: 0, unlocked: [], allBanked: true, earned: 0
+  };
+
+  var $rail = document.getElementById("rail");
+  var $panel = document.getElementById("panel");
+  var $depthNum = document.getElementById("depthNum");
+  var $zoneLine = document.getElementById("zoneLine");
+  var $stats = document.getElementById("stats");
+  var $sDive = document.getElementById("sDive");
+  var $sBank = document.getElementById("sBank");
+  var $sRisk = document.getElementById("sRisk");
+  var $riskWrap = document.getElementById("riskWrap");
+  var $sSpare = document.getElementById("sSpare");
+  var $sPearls = document.getElementById("sPearls");
+  var $sStreak = document.getElementById("sStreak");
+  var $streakWrap = document.getElementById("streakWrap");
+  var $mute = document.getElementById("mute");
+
+  document.getElementById("title").textContent = GAME_NAME;
+  document.title = GAME_NAME;
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]; }); }
+  function fmt(n) { return Number(n).toLocaleString("en-US"); }
+  function active() { return S.screen === "question" || S.screen === "caught"; }
+  function inGame() { return ["question", "caught", "lost", "banked"].indexOf(S.screen) !== -1; }
+
+  function updateMute() { $mute.textContent = muted ? "🔇 Sound off" : "🔊 Sound on"; $mute.setAttribute("aria-pressed", String(!muted)); }
+  $mute.onclick = function () { muted = !muted; save.muted = muted; persist(); updateMute(); if (!muted) sfx.coin(3); };
+  updateMute();
+  Ocean.setSkin(SKINS[save.skin] || SKINS.coral);
+
+  function toast(html) {
+    if (REDUCE) { return; }
+    var d = document.createElement("div");
+    d.className = "toast"; d.innerHTML = html;
+    $fx.appendChild(d);
+    setTimeout(function () { d.remove(); }, 3300);
+  }
+  var toastQueue = [], toastBusy = false;
+  function queueToast(html) {
+    toastQueue.push(html);
+    if (toastBusy) return;
+    (function next() {
+      var h = toastQueue.shift();
+      if (!h) { toastBusy = false; return; }
+      toastBusy = true; toast(h);
+      setTimeout(next, REDUCE ? 0 : 1600);
+    })();
+  }
+
+  function addPearls(n) {
+    save.pearls += n; save.lifetime += n; persist();
+    rollNumber($sPearls, save.pearls, 700); retrigger($sPearls, "bump");
+  }
+
+  function unlock(id) {
+    if (save.ach[id]) return;
+    var a = ACHIEVEMENTS.filter(function (x) { return x.id === id; })[0];
+    if (!a) return;
+    save.ach[id] = Date.now();
+    S.unlocked.push(a);
+    addPearls(a.reward);
+    queueToast("🏅 <b>" + esc(a.name) + "</b> unlocked, +" + a.reward + " pearls");
+    setTimeout(function () { sfx.bank(); }, 150);
+  }
+  function checkCollection() {
+    var n = foundCount();
+    if (n >= 50) unlock("found50");
+    if (n >= 150) unlock("found150");
+    if (n >= 400) unlock("found400");
+    var all = Object.keys(CATS).every(function (k) { return CATS[k].entries.some(function (e) { return save.found[e.id]; }); });
+    if (all) unlock("allcats");
+  }
+
+  function pickCat(d) {
+    var opts = DEPTHS[d].cats;
+    var fresh = opts.filter(function (c) { return !S.usedCats[c]; });
+    var pool = fresh.length ? fresh : opts, c;
+    if (S.mode === "daily") {
+      c = pool[Math.floor(S.rng() * pool.length)];
+    } else {
+      pool = pool.slice().sort(function (a, b) { return (save.seen[a] || 0) - (save.seen[b] || 0); });
+      var oldest = save.seen[pool[0]] || 0;
+      var ties = pool.filter(function (x) { return (save.seen[x] || 0) === oldest; });
+      c = ties[Math.floor(Math.random() * ties.length)];
+      save.seen[c] = Date.now(); persist();
+    }
+    S.usedCats[c] = true;
+    return c;
+  }
+
+  function sample(catKey, tiers, count) {
+    var pool = CATS[catKey].entries.filter(function (e) { return tiers.indexOf(e.tier) !== -1 && !S.used[e.id]; });
+    var out = [];
+    while (pool.length && out.length < count) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0].display);
+    return out;
+  }
+
+  /* ---------- Timer ---------- */
+  function stopTimer() { if (S.timer) { clearInterval(S.timer); S.timer = null; } $vignette.style.opacity = 0; }
+  function startTimer() {
+    stopTimer();
+    var max = S.g.air;
+    S.air = max; S.lastTick = 99;
+    var started = Date.now();
+    S.timer = setInterval(function () {
+      S.air = Math.max(0, max - (Date.now() - started) / 1000);
+      var fill = document.getElementById("airFill"), label = document.getElementById("airLabel"), bar = document.getElementById("airBar");
+      if (fill) fill.style.transform = "scaleX(" + (S.air / max) + ")";
+      var secs = Math.ceil(S.air);
+      if (label) label.textContent = secs + (secs === 1 ? " second" : " seconds") + " of air";
+      if (bar) bar.classList.toggle("low", S.air <= 8);
+      $vignette.style.opacity = S.air <= 8 ? String((8 - S.air) / 8 * 0.8) : "0";
+      if (secs <= 5 && secs !== S.lastTick && secs > 0) { S.lastTick = secs; sfx.tick(); }
+      if (S.air <= 0) { stopTimer(); fail("Out of air."); }
+    }, 100);
+  }
+
+  /* ---------- Rendering ---------- */
+  function setSea() {
+    document.body.style.backgroundColor = active() ? DEPTHS[S.depth].sea : SURFACE_SEA;
+    Ocean.setZone(active() ? S.depth + 1 : 0);
+  }
+
+  function renderRail() {
+    var html = '<div class="rail-line"></div>';
+    DEPTHS.forEach(function (d, i) {
+      var cls = "stop";
+      if (active() && i === S.depth) cls += " here";
+      else if (active() && i < S.depth) cls += " passed";
+      html += '<div class="' + cls + '"><div class="tick"></div><div class="stop-text"><b>' + d.name + '</b><span class="m">' + fmt(d.m) + ' m, ×' + d.mult + '</span></div></div>';
+    });
+    $rail.innerHTML = html;
+  }
+
+  function renderReadout() {
+    rollNumber($depthNum, active() ? DEPTHS[S.depth].m : 0, 1100);
+    var label = { home: "At the surface", gear: "At the dock", logbook: "In the logbook", stats: "At the surface", howto: "At the surface", final: "Back at the surface" }[S.screen] || "Back at the surface";
+    $zoneLine.innerHTML = active()
+      ? '<strong>' + DEPTHS[S.depth].name + ' zone</strong>, points ×' + DEPTHS[S.depth].mult + (S.mode === "daily" ? ', Daily Dive' : '')
+      : label;
+    $stats.classList.toggle("home", !inGame());
+    $sDive.textContent = Math.min(Math.max(S.dive, 1), DIVES_PER_RUN);
+    $riskWrap.hidden = !active();
+    $sSpare.textContent = S.spares;
+    if ($sPearls._val === undefined) setNumber($sPearls, save.pearls);
+    var st = streakNow();
+    $sStreak.textContent = st;
+    $streakWrap.hidden = st === 0;
+  }
+
+  function shopButton(label, id, disabled) { return '<button class="' + (disabled ? 'ghost' : 'dive') + '" data-buy="' + id + '"' + (disabled ? ' disabled' : '') + '>' + label + '</button>'; }
+
+  function renderPanel() {
+    var h = "";
+    var back = '<button class="ghost back" data-nav="home">← Back</button>';
+    if (S.screen === "home") {
+      var t = todayUTC(), done = save.daily[t];
+      h = '<h2 class="prompt">How deep can you go?</h2>' +
+        '<p class="sub">A press-your-luck finance quiz. Rare answers score big, crowded ones barely count. Bank your points as pearls and spend them on gear.</p>' +
+        '<div class="modes">' +
+        '<button class="mode daily" id="playDaily"' + (done !== undefined ? ' disabled' : '') + '><b>Daily Dive</b>' +
+        '<span>Same categories for every diver today, standard gear, double pearls.</span>' +
+        (done !== undefined ? '<span class="meta">Today: ' + fmt(done) + ' points. Next one in ' + untilNextDaily() + '.</span>' : '<span class="meta">Ready to dive</span>') +
+        '</button>' +
+        '<button class="mode" id="playFree"><b>Free Dive</b><span>Unlimited games with your gear and items. Earn pearls every time you bank.</span>' +
+        '<span class="meta">Best: ' + fmt(save.best) + '</span></button>' +
+        '</div>' +
+        '<div class="nav">' +
+        '<button class="ghost" data-nav="gear">Gear shop</button>' +
+        '<button class="ghost" data-nav="logbook">Logbook ' + foundCount() + '/' + TOTAL_ANSWERS + '</button>' +
+        '<button class="ghost" data-nav="stats">Stats and badges</button>' +
+        '<button class="ghost" data-nav="howto">How to play</button>' +
+        '</div>';
+    } else if (S.screen === "howto") {
+      h = back + '<h2 class="prompt">How to play</h2>' +
+        '<ol class="rules">' +
+        '<li>Each dive goes down five zones. Every zone asks for one answer in a finance category.</li>' +
+        '<li>Your answer’s points are its rarity times the zone’s multiplier, and they go into your haul.</li>' +
+        '<li>After each answer, surface to bank the haul or dive deeper for a bigger multiplier.</li>' +
+        '<li>A wrong answer or running out of air loses the whole haul, unless you have a spare tank left.</li>' +
+        '<li>Three dives per game. Reach the bottom for a depth bonus.</li>' +
+        '<li>Everything you bank becomes pearls. The Daily Dive pays double.</li>' +
+        '</ol>' +
+        '<div class="scale">' + ["c", "u", "r", "k"].map(function (t) { return '<span class="tier' + (t === "k" ? " k" : "") + '">' + TIERS[t].name + ': ' + TIERS[t].pts + '</span>'; }).join("") + '</div>';
+    } else if (S.screen === "gear") {
+      h = back + '<h2 class="prompt">Gear shop</h2><p class="sub">You have 🦪 <strong>' + fmt(save.pearls) + '</strong> pearls. Upgrades and items work in Free Dive; the Daily Dive uses standard gear so scores stay fair.</p>';
+      h += '<div class="section-h">Upgrades</div><ul class="shop">';
+      Object.keys(UPGRADES).forEach(function (k) {
+        var u = UPGRADES[k], lvl = save.up[k], max = u.costs.length, cost = u.costs[lvl];
+        h += '<li><div class="info"><b>' + u.name + ' ' + '<span style="display:inline">(level ' + lvl + ' of ' + max + ')</span></b><span>' + u.desc + '</span></div>' +
+          (lvl >= max ? shopButton("Maxed", "", true) : shopButton("🦪 " + fmt(cost), "up:" + k, save.pearls < cost)) + '</li>';
+      });
+      h += '</ul><div class="section-h">Items</div><ul class="shop">';
+      Object.keys(ITEMS).forEach(function (k) {
+        var it = ITEMS[k], have = save.items[k] || 0;
+        h += '<li><div class="info"><b>' + it.name + ' <span style="display:inline">(you have ' + have + ')</span></b><span>' + it.desc + '</span></div>' +
+          (have >= it.max ? shopButton("Full", "", true) : shopButton("🦪 " + it.cost, "item:" + k, save.pearls < it.cost)) + '</li>';
+      });
+      h += '</ul><div class="section-h">Swarm colors</div><ul class="shop">';
+      Object.keys(SKINS).forEach(function (k) {
+        var s = SKINS[k], owned = save.skins[k], on = save.skin === k;
+        var sw = s.rainbow ? 'background:linear-gradient(90deg,#ff6b6b,#ffd93d,#6bff9e,#6bc5ff,#c56bff)' : 'background:rgb(' + s.body + ')';
+        h += '<li><div class="info"><b><span class="swatch" style="' + sw + '"></span>' + s.name + '</b></div>' +
+          (on ? shopButton("Equipped", "", true) : owned ? '<button class="ghost" data-buy="skin:' + k + '">Equip</button>' : shopButton("🦪 " + fmt(s.cost), "skin:" + k, save.pearls < s.cost)) + '</li>';
+      });
+      h += '</ul>';
+    } else if (S.screen === "logbook") {
+      var n = foundCount(), ab = Object.keys(save.found).filter(function (id) { return save.found[id] === "k"; }).length;
+      h = back + '<h2 class="prompt">Logbook</h2><p class="sub">You’ve found ' + n + ' of ' + TOTAL_ANSWERS + ' answers, including ' + ab + ' Abyssal. Tap a category to see your finds.</p>';
+      DEPTHS.forEach(function (d) {
+        h += '<div class="section-h">' + d.name + ' zone</div>';
+        d.cats.forEach(function (k) {
+          var ents = CATS[k].entries, got = ents.filter(function (e) { return save.found[e.id]; });
+          var pct = Math.round(got.length / ents.length * 100);
+          h += '<details class="logcat"><summary><div class="top"><span>' + esc(catLabel(k)) + '</span><span>' + got.length + ' / ' + ents.length + '</span></div><div class="bar"><i style="width:' + pct + '%"></i></div></summary><div class="chips">' +
+            got.map(function (e) { return '<span class="chip ' + e.tier + '">' + esc(e.display) + '</span>'; }).join("") +
+            '<span class="chip hidden">' + (ents.length - got.length) + ' still hidden</span></div></details>';
+        });
+      });
+    } else if (S.screen === "stats") {
+      var games = save.games, last = games.slice(-20);
+      var avg = last.length ? Math.round(last.reduce(function (a, g) { return a + g.score; }, 0) / last.length) : 0;
+      h = back + '<h2 class="prompt">Stats and badges</h2>' +
+        '<div class="grid-stats">' +
+        '<div><b>' + fmt(save.best) + '</b><span>Best score</span></div>' +
+        '<div><b>' + fmt(avg) + '</b><span>Average, last 20</span></div>' +
+        '<div><b>' + fmt(games.length) + '</b><span>Games played</span></div>' +
+        '<div><b>' + streakNow() + '</b><span>Daily streak (best ' + save.streak.best + ')</span></div>' +
+        '<div><b>' + fmt(save.lifetime) + '</b><span>Pearls earned</span></div>' +
+        '</div>' + chartSVG(games.slice(-15)) +
+        '<div class="section-h">Diver name</div><p class="section-note">Shown on leaderboards when the site has one.</p>' +
+        '<div class="namefield"><input type="text" id="nameIn" maxlength="16" aria-label="Diver name" value="' + esc(diverName()) + '"><button class="ghost" id="nameSave">Save</button></div>' +
+        '<div class="section-h">Badges</div><ul class="ach">' +
+        ACHIEVEMENTS.map(function (a) { var got = !!save.ach[a.id]; return '<li class="' + (got ? "got" : "locked") + '"><b>' + (got ? "🏅 " : "") + esc(a.name) + '</b><span>' + esc(a.desc) + ' +' + a.reward + ' pearls</span></li>'; }).join("") +
+        '</ul>';
+    } else if (S.screen === "question") {
+      var items = S.mode === "free"
+        ? '<div class="tools">' +
+          '<button class="ghost" id="useSonar"' + ((save.items.sonar || 0) < 1 || S.sonarUsed ? ' disabled' : '') + '>📡 Sonar (' + (save.items.sonar || 0) + ')</button>' +
+          '<button class="ghost' + (S.charm ? ' armed' : '') + '" id="useCharm"' + ((save.items.charm || 0) < 1 && !S.charm ? ' disabled' : '') + '>🍀 ' + (S.charm ? 'Charm armed: ×2' : 'Lucky charm (' + (save.items.charm || 0) + ')') + '</button>' +
+          '</div>'
+        : '';
+      h = '<h2 class="prompt">' + esc(CATS[S.cat].q) + '</h2>' +
+        '<p class="sub">Worth ' + DEPTHS[S.depth].mult + '× here. You can’t reuse an answer in the same game.</p>' +
+        '<div class="air" id="airBar" aria-hidden="true"><div class="air-fill" id="airFill"></div></div>' +
+        '<div class="air-label" id="airLabel">' + S.g.air + ' seconds of air</div>' +
+        '<form class="row" id="f" autocomplete="off">' +
+        '<input type="text" id="ans" aria-label="Your answer" placeholder="Type your answer" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go">' +
+        '<button type="submit">Lock it in</button>' +
+        '</form>' +
+        '<div class="hint" id="hint">' + esc(S.hint) + '</div>' +
+        '<div class="msg ' + S.msgKind + '" id="msg">' + esc(S.msg) + '</div>' + items;
+    } else if (S.screen === "caught") {
+      var L = S.last, lastDepth = S.depth === DEPTHS.length - 1, rarer = sample(S.cat, ["k"], 1);
+      h = '<div class="catch"><span class="catch-pts">+' + L.pts + '</span><span class="catch-name">' + esc(L.display) + '</span></div>' +
+        '<div><span class="tier stamp' + (L.tier === "k" ? " k" : "") + '">' + TIERS[L.tier].name + '</span> <span class="sub" style="display:inline">' + TIERS[L.tier].pts + ' × ' + DEPTHS[S.depth].mult + (L.charm ? ' × 2 charm' : '') + (L.isNew ? ', new to your logbook' : '') + '</span></div>' +
+        (L.tier !== "k" && rarer.length ? '<p class="examples">An Abyssal catch would have been <strong>' + esc(rarer[0]) + '</strong>.</p>' : '') +
+        (lastDepth ? '<p class="examples">You’ve hit the bottom of the trench. Surface with a +' + S.g.bonus + ' bonus.</p>' : '') +
+        '<div class="actions">' +
+        '<button class="' + (lastDepth ? "dive" : "ghost") + '" id="bank">Surface and bank ' + fmt(S.haul + (lastDepth ? S.g.bonus : 0)) + '</button>' +
+        (lastDepth ? '' : '<button class="dive" id="deeper">Dive to ' + DEPTHS[S.depth + 1].name + ' (×' + DEPTHS[S.depth + 1].mult + ')</button>') +
+        '</div>';
+    } else if (S.screen === "lost") {
+      var ex = sample(S.cat, ["r", "k"], 3);
+      h = '<div class="catch"><span class="catch-pts lost">−' + fmt(S.lostHaul) + '</span><span class="catch-name">Haul lost</span></div>' +
+        '<p class="sub">' + esc(S.msg) + ' Nothing from this dive was banked.</p>' +
+        (ex.length ? '<p class="examples">Answers that would have worked: <strong>' + ex.map(esc).join("</strong>, <strong>") + '</strong>.</p>' : '') +
+        nextActions();
+    } else if (S.screen === "banked") {
+      h = '<div class="catch"><span class="catch-pts">+' + fmt(S.lastBank) + '</span><span class="catch-name">Banked</span></div>' +
+        '<p class="sub">Safe at the surface. Total banked: ' + fmt(S.banked) + '.</p>' + nextActions();
+    } else if (S.screen === "final") {
+      h = '<h2 class="prompt">' + (S.mode === "daily" ? "Daily Dive score" : "Final score") + ': <span class="gold">' + fmt(S.banked) + '</span></h2>' +
+        '<p class="sub">+' + fmt(S.earned) + ' pearls' + (S.mode === "daily" ? ' (doubled for the Daily Dive)' : '') +
+        (S.newFinds ? ', ' + S.newFinds + ' new logbook ' + (S.newFinds === 1 ? 'entry' : 'entries') : '') + '.' +
+        (S.newBest ? ' New personal best!' : '') + '</p>' +
+        '<div class="compare" id="compare">' + personalCompare() + '</div>' +
+        (S.unlocked.length ? '<div class="section-h">Badges earned</div><div class="chips">' + S.unlocked.map(function (a) { return '<span class="chip k">🏅 ' + esc(a.name) + '</span>'; }).join("") + '</div>' : '') +
+        (S.log.length ? '<ul class="ledger">' + S.log.map(function (l) {
+          return '<li><span>' + esc(l.display) + (l.tier ? ' <span class="sub" style="display:inline">(' + TIERS[l.tier].name + ')</span>' : '') + '</span><span>' + (l.lost ? 'lost' : '+' + l.pts) + '</span></li>';
+        }).join("") + '</ul>' : '') +
+        '<div class="actions"><button class="dive" id="again">Free Dive again</button><button class="ghost" data-nav="home">Home</button></div>';
+    }
+    $panel.innerHTML = h;
+    retrigger($panel, "enter");
+    bind();
+  }
+
+  function chartSVG(games) {
+    if (!games.length) return '<p class="section-note" style="margin-top:12px">Play a game to see your score history here.</p>';
+    var max = Math.max.apply(null, games.map(function (g) { return g.score; }).concat([10]));
+    var w = 100 / 15, bars = "";
+    games.forEach(function (g, i) {
+      var hgt = Math.max(2, g.score / max * 100);
+      bars += '<rect x="' + (i * w + w * 0.15) + '" y="' + (110 - hgt) + '" width="' + (w * 0.7) + '" height="' + hgt + '" rx="1.5" fill="' + (g.mode === "daily" ? "#F5C451" : "#FF8C7A") + '"><title>' + g.score + (g.mode === "daily" ? " (daily)" : "") + '</title></rect>';
+    });
+    return '<div class="section-h">Recent games</div><p class="section-note">Coral bars are Free Dives, gold bars are Daily Dives.</p><svg class="chart" viewBox="0 0 100 112" preserveAspectRatio="none" role="img" aria-label="Recent scores">' + bars + '</svg>';
+  }
+
+  function personalCompare() {
+    var prev = save.games.slice(0, -1).filter(function (g) { return g.mode === S.mode; }).slice(-20);
+    if (!prev.length) return "This is your first " + (S.mode === "daily" ? "Daily Dive" : "Free Dive") + " on record. Play more to see how you stack up against yourself.";
+    var avg = Math.round(prev.reduce(function (a, g) { return a + g.score; }, 0) / prev.length);
+    var diff = S.banked - avg;
+    return "Your recent average is <strong>" + fmt(avg) + "</strong>, so this game was <strong>" + (diff >= 0 ? "+" : "−") + fmt(Math.abs(diff)) + "</strong> " + (diff >= 0 ? "above" : "below") + " it.";
+  }
+
+  function globalCompare() {
+    if (!Board.on()) return;
+    var mode = S.mode, day = todayUTC(), mine = S.banked;
+    Board.submit({ day: day, mode: mode, score: mine, name: diverName() }).then(function () { return Board.day(day, mode); }).then(function (rows) {
+      var box = document.getElementById("compare");
+      if (!box || !rows || !rows.length) return;
+      var scores = rows.map(function (r) { return r.score; });
+      var avg = Math.round(scores.reduce(function (a, b) { return a + b; }, 0) / scores.length);
+      var below = scores.filter(function (s) { return s < mine; }).length;
+      var pct = Math.round(below / scores.length * 100);
+      var top = rows.slice(0, 5).map(function (r) { return "<li>" + esc(r.name || "Diver") + ": " + fmt(r.score) + "</li>"; }).join("");
+      box.innerHTML = personalCompare() + "<br>Today’s " + (mode === "daily" ? "Daily Dive" : "Free Dive") + " average across <strong>" + fmt(scores.length) + "</strong> games is <strong>" + fmt(avg) + "</strong>. You beat <strong>" + pct + "%</strong> of them." +
+        '<div class="section-h" style="margin-top:12px">Today’s top divers</div><ol class="board">' + top + "</ol>";
+    });
+  }
+
+  function nextActions() {
+    if (S.dive < DIVES_PER_RUN) return '<div class="actions"><button class="dive" id="next">Start dive ' + (S.dive + 1) + '</button></div>';
+    return '<div class="actions"><button class="dive" id="finish">See final score</button></div>';
+  }
+
+  function render() { setSea(); renderRail(); renderReadout(); renderPanel(); }
+  function go(screen) { S.screen = screen; render(); window.scrollTo(0, 0); }
+
+  function bind() {
+    var el;
+    $panel.querySelectorAll("[data-nav]").forEach(function (b) { b.onclick = function () { go(b.getAttribute("data-nav")); }; });
+    $panel.querySelectorAll("[data-buy]").forEach(function (b) { b.onclick = function () { buy(b.getAttribute("data-buy"), b); }; });
+    if ((el = document.getElementById("playDaily"))) el.onclick = function () { newGame("daily"); };
+    if ((el = document.getElementById("playFree"))) el.onclick = function () { newGame("free"); };
+    if ((el = document.getElementById("next"))) el.onclick = startDive;
+    if ((el = document.getElementById("again"))) el.onclick = function () { newGame("free"); };
+    if ((el = document.getElementById("finish"))) el.onclick = finish;
+    if ((el = document.getElementById("bank"))) el.onclick = bank;
+    if ((el = document.getElementById("deeper"))) el.onclick = function () { descend(S.depth + 1); };
+    if ((el = document.getElementById("useSonar"))) el.onclick = useSonar;
+    if ((el = document.getElementById("useCharm"))) el.onclick = toggleCharm;
+    if ((el = document.getElementById("nameSave"))) el.onclick = function () {
+      var v = document.getElementById("nameIn").value.trim().slice(0, 16);
+      if (v) { save.name = v; persist(); el.textContent = "Saved"; }
+    };
+    var f = document.getElementById("f");
+    if (f) {
+      f.onsubmit = function (e) { e.preventDefault(); submit(document.getElementById("ans").value); };
+      document.getElementById("ans").focus();
+    } else if (S.screen !== "home" && S.screen !== "gear" && S.screen !== "logbook" && S.screen !== "stats" && S.screen !== "howto") {
+      var btn = $panel.querySelector(".actions button.dive");
+      if (btn) setTimeout(function () { if (document.activeElement === document.body || !document.activeElement) btn.focus({ preventScroll: true }); }, 450);
+    }
+  }
+
+  /* ---------- Shop ---------- */
+  function buy(code, btn) {
+    var p = code.split(":"), kind = p[0], k = p[1], cost = 0;
+    if (kind === "up") {
+      cost = UPGRADES[k].costs[save.up[k]];
+      if (cost === undefined || save.pearls < cost) return;
+      save.pearls -= cost; save.up[k] += 1;
+    } else if (kind === "item") {
+      cost = ITEMS[k].cost;
+      if (save.pearls < cost || (save.items[k] || 0) >= ITEMS[k].max) return;
+      save.pearls -= cost; save.items[k] = (save.items[k] || 0) + 1;
+    } else if (kind === "skin") {
+      if (!save.skins[k]) {
+        cost = SKINS[k].cost;
+        if (save.pearls < cost) return;
+        save.pearls -= cost; save.skins[k] = true;
+      }
+      save.skin = k; Ocean.setSkin(SKINS[k]);
+    }
+    persist();
+    var c = center(btn);
+    Ocean.burst(c.x, c.y, 40, ["#F5C451", "#FF8C7A", "#FFFFFF"], 1.2);
+    sfx.bank(); buzz(15);
+    rollNumber($sPearls, save.pearls, 500);
+    renderPanel();
+  }
+
+  function useSonar() {
+    if (S.sonarUsed || (save.items.sonar || 0) < 1) return;
+    var pool = CATS[S.cat].entries.filter(function (e) { return (e.tier === "r" || e.tier === "k") && !S.used[e.id]; });
+    if (!pool.length) return;
+    var e = pool[Math.floor(Math.random() * pool.length)];
+    save.items.sonar -= 1; persist();
+    S.sonarUsed = true;
+    S.hint = "📡 " + TIERS[e.tier].name + ": " + e.display.split(" ").map(function (w, wi) {
+      return w.split("").map(function (ch, i) { return wi === 0 && i === 0 ? ch.toUpperCase() : /[a-z0-9]/i.test(ch) ? "_" : ch; }).join(" ");
+    }).join("   ");
+    var hint = document.getElementById("hint"); if (hint) hint.textContent = S.hint;
+    var b = document.getElementById("useSonar"); if (b) { b.disabled = true; b.textContent = "📡 Sonar (" + save.items.sonar + ")"; }
+    sfx.tick(); tone(880, 0.05, 0.4, "sine", 0.08, 1760);
+    var inp = document.getElementById("ans"); if (inp) inp.focus();
+  }
+  function toggleCharm() {
+    if (S.charm) return;
+    if ((save.items.charm || 0) < 1) return;
+    save.items.charm -= 1; persist();
+    S.charm = true;
+    var b = document.getElementById("useCharm"); if (b) { b.classList.add("armed"); b.textContent = "🍀 Charm armed: ×2"; }
+    sfx.coin(6);
+    var inp = document.getElementById("ans"); if (inp) inp.focus();
+  }
+
+  /* ---------- Game flow ---------- */
+  function newGame(mode) {
+    stopTimer();
+    if (mode === "daily" && save.daily[todayUTC()] !== undefined) mode = "free";
+    S.mode = mode;
+    S.rng = mode === "daily" ? mulberry(hashStr("abyss-" + todayUTC())) : Math.random;
+    S.g = gear(mode);
+    S.dive = 0; S.banked = 0; S.spares = S.g.spares; S.used = {}; S.usedCats = {}; S.log = [];
+    S.newFinds = 0; S.unlocked = []; S.allBanked = true; S.charm = false;
+    setNumber($sBank, 0);
+    startDive();
+  }
+
+  function startDive() {
+    S.dive += 1; S.haul = 0; S.pending = [];
+    setNumber($sRisk, 0);
+    descend(0);
+  }
+
+  function descend(d) {
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    S.depth = d;
+    S.cat = pickCat(d);
+    S.msg = ""; S.msgKind = ""; S.hint = ""; S.sonarUsed = false;
+    S.screen = "question";
+    Ocean.dive(); sfx.dive(); buzz(20);
+    render();
+    startTimer();
+  }
+
+  function submit(val) {
+    if (!val || !val.trim()) return;
+    var input = document.getElementById("ans");
+    var pos = input ? center(input) : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    var entry = lookup(S.cat, val);
+    if (entry && S.used[entry.id]) {
+      showMsg(entry.display + " is already used this game. Try another.", "note");
+      clearInput();
+      return;
+    }
+    if (!entry) { fail("“" + val.trim() + "” isn’t in the logbook for this category.", pos); return; }
+    var airLeft = S.air;
+    stopTimer();
+    S.used[entry.id] = true;
+    var charm = S.charm; S.charm = false;
+    var pts = TIERS[entry.tier].pts * DEPTHS[S.depth].mult * (charm ? 2 : 1);
+    S.haul += pts;
+    var isNew = !save.found[entry.id];
+    if (isNew) { save.found[entry.id] = entry.tier; S.newFinds += 1; persist(); }
+    S.last = { display: entry.display, tier: entry.tier, pts: pts, charm: charm, isNew: isNew };
+    S.pending.push(S.last);
+
+    var t = entry.tier;
+    var count = { c: 14, u: 30, r: 55, k: 140 }[t];
+    var colors = t === "k" ? ["#F5C451", "#FF8C7A", "#FFFFFF", "#FFD98A"] : t === "r" ? ["#FF8C7A", "#F5C451", "#FFFFFF"] : ["#FF8C7A", "#BFF3FF"];
+    Ocean.burst(pos.x, pos.y, count, colors, t === "k" ? 1.8 : t === "r" ? 1.3 : 1);
+    floatText("+" + pts, pos.x, pos.y, t === "k" || charm ? "k" : "");
+    sfx.correct(t);
+    if (t === "k") { banner("Abyssal find!"); flash("radial-gradient(circle, rgba(245,196,81,0.6), transparent 70%)"); buzz([20, 30, 20, 30, 70]); }
+    else if (t === "r") { flash("radial-gradient(circle, rgba(255,140,122,0.35), transparent 70%)"); buzz([15, 25, 15]); }
+    else buzz(12);
+
+    S.screen = "caught";
+    render();
+    rollNumber($sRisk, S.haul, 700);
+    retrigger($sRisk, "bump");
+
+    if (t === "k") unlock("abyssal");
+    if (airLeft < 3) unlock("clutch");
+    if (isNew) checkCollection();
+  }
+
+  function clearInput() { var i = document.getElementById("ans"); if (i) { i.value = ""; i.focus(); } }
+  function showMsg(t, kind) {
+    S.msg = t; S.msgKind = kind;
+    var m = document.getElementById("msg");
+    if (m) { m.textContent = t; m.className = "msg " + kind; }
+  }
+
+  function fail(reason, pos) {
+    pos = pos || center($panel);
+    Ocean.scatter(pos.x, pos.y);
+    retrigger($panel, "shake");
+    flash("rgba(179,58,43,0.45)");
+    buzz([60, 40, 60]);
+    if (S.spares > 0) {
+      S.spares -= 1;
+      sfx.spare();
+      $sSpare.textContent = S.spares;
+      retrigger($sSpare, "bump");
+      showMsg(reason + " Spare tank used: fresh air, one more try." + (S.spares ? " " + S.spares + " left." : ""), "bad");
+      clearInput();
+      startTimer();
+      return;
+    }
+    sfx.wrong();
+    stopTimer();
+    S.charm = false;
+    S.allBanked = false;
+    if (S.haul > 0) { var rp = center($sRisk); floatText("−" + fmt(S.haul), rp.x, rp.y, "fall"); }
+    S.pending.forEach(function (p) { S.log.push({ display: p.display, tier: p.tier, pts: p.pts, lost: true }); });
+    S.pending = [];
+    S.lostHaul = S.haul;
+    S.haul = 0;
+    S.msg = reason;
+    S.screen = "lost";
+    setTimeout(function () { Ocean.surface(); render(); }, REDUCE ? 0 : 380);
+  }
+
+  function bank() {
+    var bonus = S.depth === DEPTHS.length - 1 ? S.g.bonus : 0;
+    var amount = S.haul + bonus;
+    var from = document.getElementById("bank") || $panel;
+    var n = Math.min(22, 5 + Math.floor(amount / 8));
+    var wasHadal = S.depth === DEPTHS.length - 1;
+    S.lastBank = amount;
+    S.banked += amount;
+    S.pending.forEach(function (p) { S.log.push({ display: p.display, tier: p.tier, pts: p.pts }); });
+    if (bonus) S.log.push({ display: "Depth bonus", tier: null, pts: bonus });
+    S.pending = []; S.haul = 0;
+    S.screen = "banked";
+    Ocean.surface();
+    var total = S.banked;
+    var startPt = center(from);
+    render();
+    if (bonus) banner("Full depth +" + bonus);
+    coinsTo({ getBoundingClientRect: function () { return { left: startPt.x, top: startPt.y, width: 0, height: 0 }; } }, $sBank, n, function () {
+      rollNumber($sBank, total, 600);
+      retrigger($sBank, "bump");
+      sfx.bank(); buzz(15);
+    });
+    if (wasHadal) unlock("trench");
+    if (amount >= 100) unlock("haul100");
+  }
+
+  function finish() {
+    var score = S.banked, day = todayUTC();
+    S.newBest = score > save.best;
+    if (S.newBest) save.best = score;
+    save.games.push({ score: score, mode: S.mode, day: day });
+    if (save.games.length > 200) save.games = save.games.slice(-200);
+    if (S.mode === "daily") {
+      save.daily[day] = score;
+      var st = save.streak;
+      if (st.last !== day) {
+        st.count = st.last === dayBefore(day) ? st.count + 1 : 1;
+        st.last = day;
+        st.best = Math.max(st.best, st.count);
+      }
+    }
+    S.earned = score * (S.mode === "daily" ? DAILY_PEARL_MULT : 1);
+    persist();
+    unlock("first");
+    if (S.allBanked) unlock("sweep");
+    if (score >= 250) unlock("score250");
+    if (streakNow() >= 3) unlock("streak3");
+    if (streakNow() >= 7) unlock("streak7");
+    S.screen = "final";
+    render();
+    var pearlsFrom = document.querySelector(".prompt .gold") || $panel;
+    if (S.earned > 0) {
+      coinsTo(pearlsFrom, $sPearls, Math.min(24, 6 + Math.floor(S.earned / 15)), function () { addPearls(S.earned); sfx.bank(); });
+    }
+    if (S.newBest && score > 0) {
+      banner("New best!");
+      sfx.best();
+      var w = window.innerWidth;
+      [0.2, 0.5, 0.8].forEach(function (fx, i) {
+        setTimeout(function () { Ocean.burst(w * fx, window.innerHeight * 0.35, 90, ["#F5C451", "#FF8C7A", "#BFF3FF", "#FFFFFF"], 1.6); }, i * 220);
+      });
+    }
+    globalCompare();
+  }
+
+  Ocean.init();
+  setNumber($sPearls, save.pearls);
+  render();
+})();
+</script>
+</body>
+</html>
